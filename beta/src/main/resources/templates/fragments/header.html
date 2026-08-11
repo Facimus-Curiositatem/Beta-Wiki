@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<body>
+
+    <header class="header" th:fragment="header">
+        <div class="nav-container">
+            <a th:href="@{/}" class="logo">Beta Wiki</a>
+            <nav>
+                <ul>
+                    <li><a th:href="@{/}">Inicio</a></li>
+                    <li><a th:href="@{/secciones}">Secciones</a></li>
+                    <li><a th:href="@{/contactenos}">Contactenos</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+</body>
+</html>
