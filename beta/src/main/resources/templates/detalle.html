@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pagina.titulo + ' - Beta Wiki'}">Detalle - Beta Wiki</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="contenido">
+        <div class="detalle-header">
+            <span class="categoria" th:text="${pagina.categoria}">Categoria</span>
+            <h1 th:text="${pagina.titulo}">Titulo</h1>
+        </div>
+
+        <div class="detalle-contenido">
+            <p th:text="${pagina.contenido}">Contenido de la pagina</p>
+        </div>
+
+        <a th:href="@{/secciones}" class="btn-volver">Volver a secciones</a>
+    </main>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>

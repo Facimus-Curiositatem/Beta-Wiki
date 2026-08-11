@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<body>
+
+    <header class="header" th:fragment="header">
+        <div class="nav-container">
+            <a th:href="@{/}" class="logo">Beta Wiki</a>
+            <nav>
+                <ul>
+                    <li><a th:href="@{/}" th:classappend="${#request.requestURI == '/' ? 'active' : ''}">Inicio</a></li>
+                    <li><a th:href="@{/secciones}" th:classappend="${#strings.startsWith(#request.requestURI, '/secciones') ? 'active' : ''}">Secciones</a></li>
+                    <li><a th:href="@{/contactenos}" th:classappend="${#request.requestURI == '/contactenos' ? 'active' : ''}">Contactenos</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+</body>
+</html>
