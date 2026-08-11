@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secciones - Beta Wiki</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="contenido">
+        <h1>Secciones de la Wiki</h1>
+
+        <div th:each="categoria : ${categorias}">
+            <h2 th:text="${categoria}" style="margin-top: 2rem;">Categoria</h2>
+            <div class="card-grid">
+                <div class="card" th:each="pagina : ${paginas}" th:if="${pagina.categoria == categoria}">
+                    <span class="categoria" th:text="${pagina.categoria}">Categoria</span>
+                    <h3 th:text="${pagina.titulo}">Titulo</h3>
+                    <p th:text="${pagina.contenido}">Contenido</p>
+                    <a th:href="@{/secciones/{slug}(slug=${pagina.slug})}">Leer mas</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>
