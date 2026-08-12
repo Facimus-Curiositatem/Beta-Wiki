@@ -200,3 +200,59 @@ body {
 h1, h2 {
     color: #2c3e50;
 }
+
+/* Formulario: select, contador, errores y feedback */
+.form-group select {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-family: inherit;
+    background: #fff;
+}
+
+.form-group .contador {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.85rem;
+    color: #888;
+}
+
+.form-group .contador.contador-ok {
+    color: #27ae60;
+}
+
+.form-group .error {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.85rem;
+    color: #c0392b;
+    min-height: 1rem;
+}
+
+.feedback {
+    margin-bottom: 1.25rem;
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+.feedback.exito {
+    background: #e8f8f0;
+    color: #1e8449;
+    border: 1px solid #a9dfbf;
+}
+
+.feedback.error {
+    background: #fdedec;
+    color: #c0392b;
+    border: 1px solid #f5b7b1;
+}
+
+/* Empty-states (th:if / th:unless) */
+.empty-state {
+    color: #888;
+    font-style: italic;
+    margin-top: 1rem;
+}

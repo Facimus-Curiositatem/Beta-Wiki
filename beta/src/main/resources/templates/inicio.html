@@ -14,7 +14,11 @@
         <h1>Bienvenido a Beta Wiki</h1>
         <p>Explora las secciones disponibles sobre los temas del curso.</p>
 
-        <div class="card-grid">
+        <p th:if="${#lists.isEmpty(paginas)}" class="empty-state">
+            Aun no hay secciones destacadas.
+        </p>
+
+        <div class="card-grid" th:unless="${#lists.isEmpty(paginas)}">
             <div class="card" th:each="pagina : ${paginas}">
                 <span class="categoria" th:text="${pagina.categoria}">Categoria</span>
                 <h3 th:text="${pagina.titulo}">Titulo</h3>

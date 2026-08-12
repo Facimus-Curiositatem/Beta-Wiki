@@ -14,19 +14,50 @@
         <h1>Contactenos</h1>
         <p>Tienes preguntas o sugerencias? Envianos un mensaje.</p>
 
-        <form class="form-contacto" method="post" th:action="@{/contactenos}">
+        <!-- novalidate: la validacion la exige el taller en JS, no la nativa del navegador -->
+        <form id="form-contacto" class="form-contacto" method="post" th:action="@{/contactenos}" novalidate>
+
             <div class="form-group">
-                <label for="nombre">Nombre</label>
-                <input type="text" id="nombre" name="nombre" required>
+                <label for="nombre">Nombre completo *</label>
+                <input type="text" id="nombre" name="nombre" minlength="3" required autocomplete="name">
+                <small class="error" data-error-for="nombre"></small>
             </div>
+
             <div class="form-group">
-                <label for="email">Correo electronico</label>
-                <input type="email" id="email" name="email" required>
+                <label for="email">Correo electronico *</label>
+                <input type="email" id="email" name="email" required autocomplete="email">
+                <small class="error" data-error-for="email"></small>
             </div>
+
             <div class="form-group">
-                <label for="mensaje">Mensaje</label>
-                <textarea id="mensaje" name="mensaje" required></textarea>
+                <label for="telefono">Telefono *</label>
+                <input type="tel" id="telefono" name="telefono"
+                       inputmode="numeric" minlength="7" maxlength="15" required>
+                <small class="error" data-error-for="telefono"></small>
             </div>
+
+            <div class="form-group">
+                <label for="asunto">Asunto o motivo *</label>
+                <select id="asunto" name="asunto" required>
+                    <option value="" disabled selected>Seleccione una opcion</option>
+                    <option value="soporte">Soporte tecnico</option>
+                    <option value="informacion">Solicitud de informacion</option>
+                    <option value="sugerencia">Sugerencia</option>
+                    <option value="otro">Otro</option>
+                </select>
+                <small class="error" data-error-for="asunto"></small>
+            </div>
+
+            <div class="form-group">
+                <label for="mensaje">Mensaje *</label>
+                <textarea id="mensaje" name="mensaje" minlength="20" maxlength="400" rows="6" required></textarea>
+                <small id="contador-mensaje" class="contador">Faltan 20 caracteres</small>
+                <small class="error" data-error-for="mensaje"></small>
+            </div>
+
+            <!-- Zona de feedback: la validacion JS escribe aqui el resultado global -->
+            <div id="form-feedback" class="feedback" role="alert" aria-live="polite" hidden></div>
+
             <button type="submit" class="btn-enviar">Enviar mensaje</button>
         </form>
     </main>
