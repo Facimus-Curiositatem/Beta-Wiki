@@ -13,7 +13,11 @@
     <main class="contenido">
         <h1>Secciones de la Wiki</h1>
 
-        <div th:each="categoria : ${categorias}">
+        <p th:if="${#lists.isEmpty(paginas)}" class="empty-state">
+            Todavia no hay secciones registradas.
+        </p>
+
+        <div th:unless="${#lists.isEmpty(paginas)}" th:each="categoria : ${categorias}">
             <h2 th:text="${categoria}" style="margin-top: 2rem;">Categoria</h2>
             <div class="card-grid">
                 <div class="card" th:each="pagina : ${paginas}" th:if="${pagina.categoria == categoria}">
