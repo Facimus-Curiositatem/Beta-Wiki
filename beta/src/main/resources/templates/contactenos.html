@@ -14,6 +14,10 @@
         <h1>Contactenos</h1>
         <p>Tienes preguntas o sugerencias? Envianos un mensaje.</p>
 
+        <div th:if="${enviado}" class="feedback exito" role="alert">
+            Gracias, <span th:text="${nombreUsuario}">usuario</span>. Tu mensaje fue enviado correctamente.
+        </div>
+
         <!-- novalidate: la validacion la exige el taller en JS, no la nativa del navegador -->
         <form id="form-contacto" class="form-contacto" method="post" th:action="@{/contactenos}" novalidate>
 

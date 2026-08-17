@@ -4,7 +4,10 @@ import com.wiki.beta.repository.WikiRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class WikiController {
@@ -42,5 +45,17 @@ public class WikiController {
     @GetMapping("/contactenos")
     public String contactenos() {
         return "contactenos";
+    }
+
+    @PostMapping("/contactenos")
+    public String contactenosPost(@RequestParam String nombre,
+                                  @RequestParam String email,
+                                  @RequestParam String telefono,
+                                  @RequestParam String asunto,
+                                  @RequestParam String mensaje,
+                                  RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("enviado", true);
+        redirectAttributes.addFlashAttribute("nombreUsuario", nombre);
+        return "redirect:/contactenos";
     }
 }
