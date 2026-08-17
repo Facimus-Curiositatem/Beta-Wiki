@@ -20,12 +20,6 @@ public class WikiController {
     }
 
     @GetMapping("/")
-    public String Pinicio() {
-        return "test_inicio";
-    }
-    
-
-    @GetMapping("/incio")
     public String inicio(Model model) {
         model.addAttribute("paginas", wikiRepository.findAll());
         model.addAttribute("categorias", wikiRepository.findAllCategories());
