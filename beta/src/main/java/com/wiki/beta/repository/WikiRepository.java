@@ -16,12 +16,6 @@ public class WikiRepository {
     @PostConstruct
     public void init() {
         pages.add(new WikiPage(
-                "Inicio",
-                "inicio",
-                "Bienvenido a la Beta Wiki. Aqui encontraras informacion organizada por secciones sobre los temas del curso.",
-                "General"
-        ));
-        pages.add(new WikiPage(
                 "Spring Boot",
                 "spring-boot",
                 "Spring Boot es un framework de Java que simplifica la creacion de aplicaciones web. Permite configurar proyectos rapidamente con dependencias predefinidas y un servidor embebido.",
