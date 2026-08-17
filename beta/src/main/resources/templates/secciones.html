@@ -17,17 +17,17 @@
             Todavia no hay secciones registradas.
         </p>
 
-        <div th:unless="${#lists.isEmpty(paginas)}" th:each="categoria : ${categorias}">
+        <section th:unless="${#lists.isEmpty(paginas)}" th:each="categoria : ${categorias}" class="section">
             <h2 th:text="${categoria}" style="margin-top: 2rem;">Categoria</h2>
             <div class="card-grid">
-                <div class="card" th:each="pagina : ${paginas}" th:if="${pagina.categoria == categoria}">
+                <article class="card" th:each="pagina : ${paginas}" th:if="${pagina.categoria == categoria}">
                     <span class="categoria" th:text="${pagina.categoria}">Categoria</span>
                     <h3 th:text="${pagina.titulo}">Titulo</h3>
                     <p th:text="${pagina.contenido}">Contenido</p>
                     <a th:href="@{/secciones/{slug}(slug=${pagina.slug})}">Leer mas</a>
-                </div>
+                </article>
             </div>
-        </div>
+        </section>
     </main>
 
     <footer th:replace="~{fragments/footer :: footer}"></footer>

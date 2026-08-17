@@ -11,16 +11,18 @@
     <header th:replace="~{fragments/header :: header}"></header>
 
     <main class="contenido">
-        <div class="detalle-header">
-            <span class="categoria" th:text="${pagina.categoria}">Categoria</span>
-            <h1 th:text="${pagina.titulo}">Titulo</h1>
-        </div>
+        <article>
+            <header class="detalle-header">
+                <span class="categoria" th:text="${pagina.categoria}">Categoria</span>
+                <h1 th:text="${pagina.titulo}">Titulo</h1>
+            </header>
 
-        <div class="detalle-contenido">
-            <p th:text="${pagina.contenido}">Contenido de la pagina</p>
-        </div>
+            <section class="detalle-contenido">
+                <p th:text="${pagina.contenido}">Contenido de la pagina</p>
+            </section>
 
-        <a th:href="@{/secciones}" class="btn-volver">Volver a secciones</a>
+            <a th:href="@{/secciones}" class="btn-volver">Volver a secciones</a>
+        </article>
     </main>
 
     <footer th:replace="~{fragments/footer :: footer}"></footer>
