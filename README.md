@@ -1,5 +1,16 @@
 # Beta Wiki
 
+## Documentación vigente del backend REST
+
+La implementación actual de **Beta-back** es un servicio RESTful independiente de esta aplicación Wiki. La documentación técnica vigente se encuentra en:
+
+- [Arquitectura actual del servicio REST](docs/arquitectura-servicio-rest.md)
+- [Historias de usuario HU-01 a HU-28 y funcionamiento REST](docs/historias-usuario-rest.md)
+
+> **Importante:** la aplicación contenida en `Beta-Wiki/beta` sigue usando Spring MVC + Thymeleaf porque es la aplicación de documentación. Esto no significa que `Beta-back` utilice Thymeleaf. El backend de procesos funciona exclusivamente mediante API REST bajo `/api/v1/**`.
+>
+> Los archivos dentro de `ArchProposalDaza/` documentan propuestas y decisiones históricas. Cuando exista una diferencia con las páginas REST anteriores, prevalece la documentación basada en la rama `main` actual de `Beta-back`.
+
 Wiki desarrollada con Spring Boot y Thymeleaf como parte del taller del curso.
 
 ## Descripción del proyecto
