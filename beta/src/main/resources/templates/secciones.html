@@ -23,7 +23,7 @@
                 <article class="card" th:each="pagina : ${paginas}" th:if="${pagina.categoria == categoria}">
                     <span class="categoria" th:text="${pagina.categoria}">Categoria</span>
                     <h3 th:text="${pagina.titulo}">Titulo</h3>
-                    <p th:text="${pagina.contenido}">Contenido</p>
+                    <p th:text="${pagina.resumen}">Contenido</p>
                     <a th:href="@{/secciones/{slug}(slug=${pagina.slug})}">Leer mas</a>
                 </article>
             </div>
