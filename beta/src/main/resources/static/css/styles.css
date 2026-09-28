@@ -562,3 +562,30 @@ a:focus-visible {
     margin-bottom: 0.35rem;
   }
 }
+
+
+.hu-index {
+  background: #f8fbfd;
+  border: 1px solid #dde8ef;
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1.3rem;
+}
+
+.hu-index p {
+  margin-bottom: 0.55rem;
+}
+
+.hu-index p:last-child {
+  margin-bottom: 0;
+}
+
+.hu-index a {
+  color: var(--azul-medio);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.hu-index a:hover {
+  text-decoration: underline;
+}
