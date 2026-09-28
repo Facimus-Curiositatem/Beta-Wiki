@@ -234,28 +234,23 @@ En Windows:
 
 Actualmente, el proyecto incluye una prueba básica que comprueba que el contexto de Spring Boot se cargue correctamente.
 
-## Evolución del proyecto
+## Estado funcional del backend
 
-El backend REST ya cubre las historias de usuario principales del visor y editor de procesos. Las siguientes capacidades forman parte de la evolución integral del producto:
+El backend REST ya implementa las 28 historias de usuario del alcance actual. Entre las capacidades disponibles se encuentran:
 
-- Registro de empresas.
-- Administración de usuarios.
-- Roles de administrador, editor y lector.
-- Separación segura de información entre empresas.
-- Creación, consulta, actualización y eliminación de procesos.
-- Historial y trazabilidad de modificaciones.
-- Búsquedas y filtros.
-- Eliminación lógica de información.
-- Diagramas de procesos empresariales.
-- Actividades, arcos y gateways.
-- Roles, pools y lanes.
-- Mensajes y correlaciones.
-- Validación de coherencia de diagramas.
-- Persistencia mediante una base de datos.
-- Servicios REST.
-- Autenticación y autorización.
-- Pruebas unitarias y de integración.
-- Despliegue en un entorno de producción.
+- registro de empresas y administración de usuarios;
+- autenticación JWT y separación segura por empresa;
+- CRUD y consulta de procesos con historial;
+- actividades, arcos, gateways, pools y lanes;
+- roles de proceso y permisos de estructura;
+- procesos compartidos entre empresas en modo solo lectura;
+- eventos Message Throw y Message Catch;
+- correlación de mensajes y destinos externos;
+- validación de coherencia antes de publicación;
+- eliminación lógica y análisis de impacto;
+- pruebas unitarias, de integración y reglas de arquitectura.
+
+La evolución futura se concentra en la experiencia de usuario, integraciones reales con sistemas externos, automatización operativa y despliegue productivo.
 
 ## Integrantes
 
