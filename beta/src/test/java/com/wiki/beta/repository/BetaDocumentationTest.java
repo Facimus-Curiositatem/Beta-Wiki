@@ -73,4 +73,47 @@ class BetaDocumentationTest {
     }
 
 
+    @Test
+    void incluye_las_cuatro_guias_complementarias() {
+        var pages = BetaDocumentation.pages();
+
+        assertTrue(pages.stream().anyMatch(page -> "arquitectura-sistema-beta".equals(page.getSlug())));
+        assertTrue(pages.stream().anyMatch(page -> "guia-ejecucion-beta".equals(page.getSlug())));
+        assertTrue(pages.stream().anyMatch(page -> "ejemplos-api-rest".equals(page.getSlug())));
+        assertTrue(pages.stream().anyMatch(page -> "pruebas-calidad-beta".equals(page.getSlug())));
+    }
+
+    @Test
+    void las_guias_contienen_informacion_tecnica_real() {
+        var arquitectura = BetaDocumentation.pages().stream()
+                .filter(page -> "arquitectura-sistema-beta".equals(page.getSlug()))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(arquitectura.getContenido().contains("JwtAuthenticationFilter"));
+        assertTrue(arquitectura.getContenido().contains("Controller"));
+        assertTrue(arquitectura.getContenido().contains("Repository"));
+
+        var ejecucion = BetaDocumentation.pages().stream()
+                .filter(page -> "guia-ejecucion-beta".equals(page.getSlug()))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(ejecucion.getContenido().contains("swagger-ui/index.html"));
+        assertTrue(ejecucion.getContenido().contains("./mvnw clean verify"));
+
+        var ejemplos = BetaDocumentation.pages().stream()
+                .filter(page -> "ejemplos-api-rest".equals(page.getSlug()))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(ejemplos.getContenido().contains("/api/v1/auth/login"));
+        assertTrue(ejemplos.getContenido().contains("Authorization: Bearer"));
+
+        var calidad = BetaDocumentation.pages().stream()
+                .filter(page -> "pruebas-calidad-beta".equals(page.getSlug()))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(calidad.getContenido().contains("80%"));
+        assertTrue(calidad.getContenido().contains("ArchUnit"));
+        assertTrue(calidad.getContenido().contains("SonarCloud"));
+    }
+
 }

@@ -21,14 +21,16 @@ final class BetaDocumentation {
     }
 
     static List<WikiPage> pages() {
-        return List.of(
+        var pages = new java.util.ArrayList<>(List.of(
                 apiRest(),
                 seguridad(),
                 modelado(),
                 hu01(), hu02(), hu03(), hu04(), hu05(), hu06(), hu07(),
                 hu08(), hu09(), hu10(), hu11(), hu12(), hu13(), hu14(),
                 hu15(), hu16(), hu17(), hu18(), hu19(), hu20(), hu21(),
-                hu22(), hu23(), hu24(), hu25(), hu26(), hu27(), hu28());
+                hu22(), hu23(), hu24(), hu25(), hu26(), hu27(), hu28()));
+        pages.addAll(BetaProjectGuides.pages());
+        return List.copyOf(pages);
     }
 
     private static WikiPage apiRest() {
