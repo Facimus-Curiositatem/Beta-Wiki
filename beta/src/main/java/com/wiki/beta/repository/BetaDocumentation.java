@@ -112,6 +112,36 @@ final class BetaDocumentation {
                         <li><code>modelado/controller/**</code> - endpoints BPMN.</li>
                     </ul>
 
+                    <h2>Ejemplo real: Controller -> Service -> Repository</h2>
+                    <p>
+                        El siguiente ejemplo resume el patron que repetimos en el backend. El Controller
+                        no decide reglas de negocio ni recibe el tenant desde el JSON: toma
+                        <code>empresaId</code> desde <code>ApiPrincipal</code> y delega en el Service.
+                    </p>
+                    <pre class="code-block"><code>@PostMapping
+public ResponseEntity&lt;ProcesoResponse&gt; crear(
+        @Validated @RequestBody ProcesoRequest request,
+        @AuthenticationPrincipal ApiPrincipal principal) {
+
+    Proceso proceso = procesoService.crear(
+            principal.empresaId(),
+            principal.usuarioId(),
+            request.nombre(),
+            request.descripcion(),
+            request.categoria());
+
+    return ResponseEntity
+            .created(URI.create("/api/v1/procesos/" + proceso.getId()))
+            .body(ProcesoResponse.of(proceso));
+}</code></pre>
+                    <p>
+                        Dentro de <code>ProcesoService.crear()</code> se valida el nombre, se busca la
+                        Empresa y el Usuario mediante repositories, se persiste el Proceso, se crea el
+                        Pool inicial y se registra el historial. Ese mismo reparto de responsabilidades
+                        se aplica en ActividadService, ArcoService, GatewayService, MensajeService y los
+                        demas servicios.
+                    </p>
+
                     <h2>Mapa de historias de usuario</h2>
                     <div class="hu-index">
                         <p><strong>Empresa, usuarios y seguridad:</strong>
@@ -1068,7 +1098,10 @@ final class BetaDocumentation {
     }
 
     private static String archivo(String ruta, String descripcion) {
-        return "<code>" + ruta + "</code> - " + descripcion;
+        String rutaCompleta = ruta.startsWith("src/")
+                ? ruta
+                : "src/main/java/com/facimus/procesos/" + ruta;
+        return "<code>" + rutaCompleta + "</code> - " + descripcion;
     }
 
     private static String lista(String[] elementos) {
