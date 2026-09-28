@@ -589,3 +589,22 @@ a:focus-visible {
 .hu-index a:hover {
   text-decoration: underline;
 }
+
+
+.code-block {
+  background: #172230;
+  color: #edf4fa;
+  padding: 1rem 1.1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0.9rem 0 1.2rem;
+  line-height: 1.55;
+  border: 1px solid #26394c;
+}
+
+.code-block code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  white-space: pre;
+}
