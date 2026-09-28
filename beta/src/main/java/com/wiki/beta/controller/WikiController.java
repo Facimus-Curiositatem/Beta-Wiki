@@ -21,8 +21,8 @@ public class WikiController {
 
     @GetMapping("/")
     public String inicio(Model model) {
-        model.addAttribute("paginas", wikiRepository.findAll());
-        model.addAttribute("categorias", wikiRepository.findAllCategories());
+        model.addAttribute("paginas", wikiRepository.findDestacadas());
+        model.addAttribute("totalPaginas", wikiRepository.findAll().size());
         return "inicio";
     }
 

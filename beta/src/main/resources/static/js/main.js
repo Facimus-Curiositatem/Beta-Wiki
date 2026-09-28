@@ -2,7 +2,51 @@
 document.addEventListener('DOMContentLoaded', function () {
     inicializarContadorMensaje();
     inicializarValidacionContacto();
+    inicializarBuscador();
 });
+
+// Buscador de la pagina de secciones: filtra las tarjetas por titulo, resumen y contenido del documento.
+function inicializarBuscador() {
+    const campo = document.getElementById('buscar-seccion');
+    if (!campo) {
+        return;
+    }
+    const tarjetas = Array.from(document.querySelectorAll('.card[data-buscar]'));
+    const secciones = Array.from(document.querySelectorAll('.seccion-categoria'));
+    const resultado = document.getElementById('resultado-busqueda');
+    const sinResultados = document.getElementById('sin-resultados');
+
+    // Sin tildes ni mayusculas, para que "autenticacion" encuentre "autenticación".
+    function normalizar(texto) {
+        return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    }
+
+    const indice = new Map(tarjetas.map(function (tarjeta) {
+        return [tarjeta, normalizar(tarjeta.dataset.buscar)];
+    }));
+
+    function filtrar() {
+        const terminos = normalizar(campo.value.trim()).split(/\s+/).filter(Boolean);
+        let visibles = 0;
+        tarjetas.forEach(function (tarjeta) {
+            const texto = indice.get(tarjeta);
+            const coincide = terminos.every(function (t) { return texto.includes(t); });
+            tarjeta.hidden = !coincide;
+            if (coincide) {
+                visibles++;
+            }
+        });
+        secciones.forEach(function (seccion) {
+            seccion.hidden = !seccion.querySelector('.card:not([hidden])');
+        });
+        sinResultados.hidden = visibles > 0;
+        resultado.textContent = terminos.length === 0
+            ? ''
+            : visibles + (visibles === 1 ? ' seccion encontrada' : ' secciones encontradas');
+    }
+
+    campo.addEventListener('input', filtrar);
+}
 
 // Contador de caracteres del formulario de contacto (Actividad 29).
 function inicializarContadorMensaje() {

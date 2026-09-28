@@ -3,10 +3,13 @@
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /build
 
-COPY beta/ ./
+# La wiki empaqueta los .md de ArchProposalDaza/docs (ver <resources> en beta/pom.xml)
+COPY beta/ ./beta/
+COPY ArchProposalDaza/docs/ ./ArchProposalDaza/docs/
 
+WORKDIR /build/beta
 RUN mvn -DskipTests package && \
-    cp target/*.jar app.jar
+    cp target/*.jar /build/app.jar
 
 FROM eclipse-temurin:21-jre
 

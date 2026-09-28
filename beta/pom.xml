@@ -63,6 +63,20 @@
 	</dependencies>
 
 	<build>
+		<resources>
+			<!-- Recursos normales de la app (plantillas, css, js, properties) -->
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+			<!-- Documentacion del proyecto: se copia a classpath:docs/ para que la wiki la muestre -->
+			<resource>
+				<directory>${project.basedir}/../ArchProposalDaza/docs</directory>
+				<targetPath>docs</targetPath>
+				<includes>
+					<include>**/*.md</include>
+				</includes>
+			</resource>
+		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>

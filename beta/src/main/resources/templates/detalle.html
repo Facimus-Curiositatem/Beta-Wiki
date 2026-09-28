@@ -10,16 +10,31 @@
 
     <header th:replace="~{fragments/header :: header}"></header>
 
-    <main class="contenido">
+    <main class="contenido" th:classappend="${pagina.documento} ? 'contenido-doc'">
         <article>
             <header class="detalle-header">
                 <span class="categoria" th:text="${pagina.categoria}">Categoria</span>
                 <h1 th:text="${pagina.titulo}">Titulo</h1>
             </header>
 
-            <section class="detalle-contenido">
+            <!-- Paginas escritas a mano en WikiRepository -->
+            <section class="detalle-contenido" th:unless="${pagina.documento}">
                 <p th:text="${pagina.contenido}">Contenido de la pagina</p>
             </section>
+
+            <!-- Documentos .md de ArchProposalDaza/docs: se convierten a HTML en el navegador -->
+            <div class="doc-layout" th:if="${pagina.documento}">
+                <nav class="doc-toc" id="doc-toc" aria-label="En esta pagina" hidden>
+                    <p class="doc-toc-titulo">En esta pagina</p>
+                    <ul id="doc-toc-lista"></ul>
+                </nav>
+                <section class="detalle-contenido markdown-body" id="doc-contenido">
+                    <p class="doc-cargando">Cargando documento...</p>
+                    <noscript>
+                        <pre class="doc-fuente" th:text="${pagina.markdown}">Markdown</pre>
+                    </noscript>
+                </section>
+            </div>
 
             <a th:href="@{/secciones}" class="btn-volver">Volver a secciones</a>
         </article>
@@ -28,5 +43,17 @@
     <footer th:replace="~{fragments/footer :: footer}"></footer>
 
     <script th:src="@{/js/main.js}"></script>
+
+    <th:block th:if="${pagina.documento}">
+        <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/mermaid@11.17.2/dist/mermaid.min.js"></script>
+        <script th:inline="javascript">
+            window.WIKI_DOC = {
+                markdown: /*[[${pagina.markdown}]]*/ '',
+                baseSecciones: /*[[@{/secciones/}]]*/ '/secciones/'
+            };
+        </script>
+        <script th:src="@{/js/documento.js}"></script>
+    </th:block>
 </body>
 </html>

@@ -1,7 +1,8 @@
 # ADR-003: Dónde vive la validación de coherencia del diagrama
 
 ## Estado
-Aceptado.
+Aceptado en su principio; implementación reemplazada por
+[ADR-007](ADR-007-validaciones-en-servicios.md).
 
 ## Contexto
 El enunciado fija reglas de coherencia que no son validables campo a campo:
