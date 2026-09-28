@@ -1,3 +1,7 @@
+> **Obsoleto.** El backend migró a REST + JWT
+> ([ADR-004](adr/ADR-004-migracion-rest-jwt.md)).
+> Ver [diseno-api-rest.md](diseno-api-rest.md).
+
 # Diseño de controladores + vistas Thymeleaf (entrega 1)
 
 Alcance de la entrega 1: **empresas, usuarios, procesos**. No incluye el

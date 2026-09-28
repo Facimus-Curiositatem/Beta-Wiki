@@ -17,10 +17,17 @@
             Todavia no hay secciones registradas.
         </p>
 
-        <section th:unless="${#lists.isEmpty(paginas)}" th:each="categoria : ${categorias}" class="section">
+        <div class="buscador" th:unless="${#lists.isEmpty(paginas)}">
+            <label for="buscar-seccion">Buscar en la wiki</label>
+            <input type="search" id="buscar-seccion" placeholder="Ej: JWT, ADR-004, pool, HU-19..." autocomplete="off">
+            <p id="resultado-busqueda" class="resultado-busqueda" aria-live="polite"></p>
+        </div>
+
+        <section th:unless="${#lists.isEmpty(paginas)}" th:each="categoria : ${categorias}" class="section seccion-categoria">
             <h2 th:text="${categoria}" style="margin-top: 2rem;">Categoria</h2>
             <div class="card-grid">
-                <article class="card" th:each="pagina : ${paginas}" th:if="${pagina.categoria == categoria}">
+                <article class="card" th:each="pagina : ${paginas}" th:if="${pagina.categoria == categoria}"
+                         th:attr="data-buscar=${pagina.titulo + ' ' + pagina.categoria + ' ' + pagina.contenido + ' ' + (pagina.markdown ?: '')}">
                     <span class="categoria" th:text="${pagina.categoria}">Categoria</span>
                     <h3 th:text="${pagina.titulo}">Titulo</h3>
                     <p th:text="${pagina.contenido}">Contenido</p>
@@ -28,6 +35,8 @@
                 </article>
             </div>
         </section>
+
+        <p id="sin-resultados" class="empty-state" hidden>No hay secciones que coincidan con la busqueda.</p>
     </main>
 
     <footer th:replace="~{fragments/footer :: footer}"></footer>
