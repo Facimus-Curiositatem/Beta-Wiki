@@ -10,7 +10,15 @@ Actualmente, la aplicación permite consultar artículos relacionados con tecnol
 
 El proyecto también sirve como punto de partida para el desarrollo de un visor y editor de procesos empresariales, en el que cada organización podrá administrar sus usuarios, roles, procesos y diagramas.
 
-> **Nota:** la versión actual corresponde a un prototipo académico. Las funciones avanzadas de gestión empresarial y modelado de procesos pertenecen a la visión futura del proyecto.
+> **Nota:** esta aplicación sigue siendo la Wiki académica construida con Thymeleaf. El backend principal del proyecto (`Beta-back`) ya implementa la API REST de gestión empresarial y modelado de procesos; la Wiki documenta ese comportamiento sin reemplazarlo.
+
+## Documentación del backend REST
+
+La referencia de las 28 historias de usuario y su implementación en el servicio REST se encuentra en:
+
+- [Historias de usuario y API REST](HISTORIAS_USUARIO_REST.md)
+
+La documentación cubre autenticación JWT, multitenencia, procesos, historial, actividades, arcos, gateways, roles, pools, lanes, procesos compartidos, permisos, eventos de mensaje, destinos externos y correlación.
 
 ## Funcionalidades actuales
 
@@ -226,9 +234,9 @@ En Windows:
 
 Actualmente, el proyecto incluye una prueba básica que comprueba que el contexto de Spring Boot se cargue correctamente.
 
-## Visión futura
+## Evolución del proyecto
 
-El proyecto busca evolucionar hacia un visor y editor de procesos empresariales que incluya:
+El backend REST ya cubre las historias de usuario principales del visor y editor de procesos. Las siguientes capacidades forman parte de la evolución integral del producto:
 
 - Registro de empresas.
 - Administración de usuarios.
