@@ -112,6 +112,31 @@ final class BetaDocumentation {
                         <li><code>modelado/controller/**</code> - endpoints BPMN.</li>
                     </ul>
 
+                    <h2>Mapa de historias de usuario</h2>
+                    <div class="hu-index">
+                        <p><strong>Empresa, usuarios y seguridad:</strong>
+                            <a href="/secciones/hu-01-registro-empresa">HU-01</a>,
+                            <a href="/secciones/hu-02-gestion-usuarios">HU-02</a>,
+                            <a href="/secciones/hu-03-inicio-sesion">HU-03</a>.
+                        </p>
+                        <p><strong>Procesos:</strong>
+                            <a href="/secciones/hu-04-crear-proceso">HU-04</a> a
+                            <a href="/secciones/hu-07-consultar-procesos">HU-07</a>.
+                        </p>
+                        <p><strong>Actividades, arcos y gateways:</strong>
+                            <a href="/secciones/hu-08-crear-actividad">HU-08</a> a
+                            <a href="/secciones/hu-16-eliminar-gateway">HU-16</a>.
+                        </p>
+                        <p><strong>Roles, pools, lanes y comparticion:</strong>
+                            <a href="/secciones/hu-17-crear-rol">HU-17</a> a
+                            <a href="/secciones/hu-24-permisos-estructura">HU-24</a>.
+                        </p>
+                        <p><strong>Mensajeria BPMN:</strong>
+                            <a href="/secciones/hu-25-message-throw">HU-25</a> a
+                            <a href="/secciones/hu-28-correlacion">HU-28</a>.
+                        </p>
+                    </div>
+
                     <h2>Por que esta arquitectura</h2>
                     <p>
                         Separamos Controller, Service y Repository para que HTTP no contenga reglas de
