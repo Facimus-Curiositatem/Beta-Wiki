@@ -47,4 +47,30 @@ class BetaDocumentationTest {
         assertTrue(api.getContenido().contains("ProblemDetail"));
         assertTrue(api.getContenido().contains("PageResponse"));
     }
+    @Test
+    void historias_muestran_rutas_completas_del_backend() {
+        var hu04 = BetaDocumentation.pages().stream()
+                .filter(page -> "hu-04-crear-proceso".equals(page.getSlug()))
+                .findFirst()
+                .orElseThrow();
+
+        assertTrue(hu04.getContenido().contains(
+                "src/main/java/com/facimus/procesos/gestion/controller/ProcesoController.java"));
+        assertTrue(hu04.getContenido().contains(
+                "src/main/java/com/facimus/procesos/gestion/service/ProcesoService.java"));
+    }
+
+    @Test
+    void pagina_api_incluye_ejemplo_real_de_codigo() {
+        var api = BetaDocumentation.pages().stream()
+                .filter(page -> "api-rest-historias-usuario".equals(page.getSlug()))
+                .findFirst()
+                .orElseThrow();
+
+        assertTrue(api.getContenido().contains("@PostMapping"));
+        assertTrue(api.getContenido().contains("procesoService.crear"));
+        assertTrue(api.getContenido().contains("ApiPrincipal"));
+    }
+
+
 }
