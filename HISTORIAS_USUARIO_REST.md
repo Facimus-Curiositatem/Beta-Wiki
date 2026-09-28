@@ -1,5 +1,7 @@
 # Historias de usuario y API REST
 
+> **Documentación navegable:** la aplicación Wiki contiene una página individual para cada HU (HU-01 a HU-28). Cada página explica endpoints, flujo Controller -> Service -> Repository, archivos involucrados y reglas de negocio. La sección `API REST - Arquitectura del backend` explica la arquitectura transversal de seguridad, DTOs, errores y paginación.
+
 Este documento describe cómo se implementan las 28 historias de usuario del proyecto en el backend `Beta-back`.
 
 La API usa el prefijo `/api/v1`, autenticación Bearer JWT, aislamiento por empresa y respuestas JSON. El identificador de empresa se obtiene del usuario autenticado y no se confía en un `empresaId` enviado por el cliente.

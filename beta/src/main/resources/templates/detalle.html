@@ -18,7 +18,7 @@
             </header>
 
             <section class="detalle-contenido">
-                <p th:text="${pagina.contenido}">Contenido de la pagina</p>
+                <div class="wiki-doc" th:utext="${pagina.contenido}">Contenido de la pagina</div>
             </section>
 
             <a th:href="@{/secciones}" class="btn-volver">Volver a secciones</a>
