@@ -17,6 +17,10 @@ El proyecto también sirve como punto de partida para el desarrollo de un visor 
 La referencia de las 28 historias de usuario y su implementación en el servicio REST se encuentra en:
 
 - [Historias de usuario y API REST](HISTORIAS_USUARIO_REST.md)
+- [Arquitectura visual del sistema](docs/ARQUITECTURA_SISTEMA.md)
+- [Guia de ejecucion](docs/GUIA_EJECUCION.md)
+- [Ejemplos de API REST](docs/EJEMPLOS_API_REST.md)
+- [Pruebas y calidad](docs/PRUEBAS_CALIDAD.md)
 
 La documentación cubre autenticación JWT, multitenencia, procesos, historial, actividades, arcos, gateways, roles, pools, lanes, procesos compartidos, permisos, eventos de mensaje, destinos externos y correlación.
 
