@@ -1,0 +1,490 @@
+<div class="doc-layout">
+<nav class="doc-indice" aria-label="Contenido del documento">
+<p class="doc-indice-titulo">Contenido</p>
+<ol><li><a href="#ficha-del-documento">Ficha del documento</a></li><li><a href="#1-estrategia-y-alcance">1. Estrategia y alcance</a></li><li><a href="#2-frontend">2. Frontend</a></li><li><a href="#3-backend">3. Backend</a></li><li><a href="#4-ejecucion-y-defectos">4. Ejecución y defectos</a></li><li><a href="#5-conclusiones">5. Conclusiones</a></li><li><a href="#anexos-y-referencias">Anexos y referencias</a></li></ol>
+</nav>
+<article class="doc-cuerpo">
+<h2 id="ficha-del-documento">Ficha del documento</h2>
+<div class="doc-tabla-scroll"><table class="doc-ficha">
+
+
+<tbody><tr>
+<th scope="row">Institución / asignatura</th>
+<td>Pontificia Universidad Javeriana · Desarrollo Web (34807), periodo 2026-30</td>
+</tr>
+<tr>
+<th scope="row">Nombre del proyecto</th>
+<td>Facimus Procesos (Beta): herramienta web multiempresa para modelar procesos BPMN</td>
+</tr>
+<tr>
+<th scope="row">Equipo / integrantes</th>
+<td>Samuel Bonilla (Mundolel), Samuel Giraldo (Segiraldo0610), Juan Guillermo Gómez (GomezJuangl) y Andrés Ospina (andyospina)</td>
+</tr>
+<tr>
+<th scope="row">Docente</th>
+<td>Pablo Andrés Márquez Fernández</td>
+</tr>
+<tr>
+<th scope="row">Versión / fecha</th>
+<td>1.0 · 23/11/2026 · evidencias de CI del 23/11/2026 (backend main a3f88ab, frontend main 7c61265)</td>
+</tr>
+<tr>
+<th scope="row">Enlace al repositorio</th>
+<td><a href="https://github.com/Facimus-Curiositatem/Beta-back" rel="noopener noreferrer" target="_blank">Beta-back</a> (API REST) · <a href="https://github.com/Facimus-Curiositatem/Beta-front" rel="noopener noreferrer" target="_blank">Beta-front</a> (Angular) · <a href="https://github.com/Facimus-Curiositatem/Beta-Wiki" rel="noopener noreferrer" target="_blank">Beta-Wiki</a> (documentación)</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="1-estrategia-y-alcance">1. Estrategia y alcance</h2>
+<p><strong>Funcionalidades BPMN cubiertas:</strong> las 28 historias de usuario del sistema, agrupadas así:</p>
+<ul>
+<li>
+<strong>Acceso y empresas:</strong> registro de empresa con su administrador, inicio y cierre de sesión, renovación de tokens (access y refresh) y rutas protegidas.
+</li>
+<li>
+<strong>Administración:</strong> usuarios (crear, desactivar y reactivar), roles de proceso y permisos por rol (ADMINISTRADOR, EDITOR y SOLO_LECTURA).
+</li>
+<li>
+<strong>Procesos:</strong> crear, consultar, buscar, editar, publicar (BORRADOR → PUBLICADO), historial de cambios y eliminación lógica con filtro de inactivos.
+</li>
+<li>
+<strong>Modelado BPMN:</strong> pools (incluido un pool externo de caja negra), lanes con rol y orden, actividades por tipo, gateways exclusivo y paralelo, arcos con etiqueta y condición, eventos de mensaje THROW/CATCH, mensajes entre pools con destino externo, correlación y validación del modelo antes de publicar.
+</li>
+</ul>
+<p><strong>Ambiente y datos de prueba:</strong></p>
+<ul>
+<li>
+<strong>Backend:</strong> backend temporal en la VM beta-back con la imagen del PR (perfil prod) y PostgreSQL 18.6; base proyecto_ci vaciada antes y después de cada corrida.
+</li>
+<li>
+<strong>Frontend:</strong> la imagen Docker del front corre en el runner y apunta a un backend temporal en beta-back (imagen beta-back:latest) con la base proyecto_ci_front vacía; Chrome sin ventana a 1366×900.
+</li>
+<li>
+<strong>Datos:</strong> la colección Facimus-HU-Flow registra su propia empresa con NIT y correos dinámicos; la suite Selenium registra por la pantalla de registro una «Empresa E2E &lt;código&gt;» por ejecución, con correos @example.com, contraseña aleatoria y nombres únicos.
+</li>
+<li>
+<strong>Verificación visual:</strong> aplicación desplegada (<a href="https://beta-front.taila95c4c.ts.net" rel="noopener noreferrer" target="_blank">https://beta-front.taila95c4c.ts.net</a>) con el proceso de ejemplo «Solicitud de Vacaciones» en la cuenta de pruebas admin@prod.com.
+</li>
+</ul>
+<p><strong>Criterios de entrada y salida:</strong></p>
+<ul>
+<li>
+<strong>Entrada:</strong> build y pruebas unitarias en verde, imagen publicada en GHCR y backend temporal respondiendo 401/403 en /api/v1/procesos.
+</li>
+<li>
+<strong>Salida:</strong> 100 % de las aserciones de Postman aprobadas (si una falla, el job falla y el PR queda en rojo); 100 % de los casos E2E aprobados (condición para desplegar main); sin defectos de severidad alta abiertos.
+</li>
+</ul>
+<h2 id="2-frontend">2. Frontend</h2>
+<p><strong>Navegación e interfaz:</strong> barra superior con Procesos, Compartidos conmigo, Usuarios, Roles de proceso, Permisos de estructura y Cerrar sesión (las opciones de administración solo aparecen para el rol ADMINISTRADOR); migas de pan en cada pantalla (por ejemplo, Procesos / Solicitud de Vacaciones / Pools y lanes / Diagrama). Las rutas protegidas redirigen a /login y recuerdan la página pedida (returnUrl). Lo verifican los casos E2E de login, cierre de sesión y registro de empresa.</p>
+<p><strong>Creación y edición de diagramas BPMN:</strong> el editor (/procesos/:id/diagrama) ofrece una paleta con actividades (tarea, usuario, servicio, manual, script y regla de negocio), gateways (exclusivo, paralelo e inclusivo) y eventos de mensaje (inicio, espera y envío). Las figuras se arrastran a un lane o se colocan con clic; al seleccionarlas se editan en el panel de propiedades, se conectan con «Conectar» y se eliminan con análisis de impacto. El panel «Revisión del modelo» señala en vivo los errores de coherencia. Las pantallas de lista y formulario de pools, lanes, actividades, gateways y arcos se prueban con los cinco casos E2E de modelado.</p>
+<figure>
+<img alt="Figura 1. Editor de diagramas en el despliegue ( /procesos/48/diagrama ): proceso «Solicitud de Vacaciones» con un pool interno de dos lanes, actividades de usuario, gateway exclusivo con condiciones, evento de envío y mensaje hacia el pool externo de caja negra." height="665" loading="lazy" src="img/05_Pruebas_Funcionales/figura-1.png" width="1540"/>
+<figcaption>
+Figura 1. Editor de diagramas en el despliegue (<a href="https://beta-front.taila95c4c.ts.net/procesos/48/diagrama" rel="noopener noreferrer" target="_blank">/procesos/48/diagrama</a>): proceso «Solicitud de Vacaciones» con un pool interno de dos lanes, actividades de usuario, gateway exclusivo con condiciones, evento de envío y mensaje hacia el pool externo de caja negra.
+</figcaption>
+</figure>
+<figure>
+<img alt="Figura 2. Gateway seleccionado: acciones «Conectar» y «Eliminar» y panel de propiedades (nombre y tipo)." height="580" loading="lazy" src="img/05_Pruebas_Funcionales/figura-2.png" width="1350"/>
+<figcaption>
+Figura 2. Gateway seleccionado: acciones «Conectar» y «Eliminar» y panel de propiedades (nombre y tipo).
+</figcaption>
+</figure>
+<p><strong>Validaciones, mensajes y manejo de errores:</strong></p>
+<ul>
+<li>
+<strong>Login:</strong> «El correo es obligatorio», «La contraseña es obligatoria» y «El correo no tiene un formato válido»; las credenciales inválidas muestran un error y la sesión no se abre.
+</li>
+<li>
+<strong>Registro de empresa:</strong> los seis campos obligatorios muestran «Revisa este campo: es obligatorio y debe tener un formato válido.».
+</li>
+<li>
+<strong>Procesos:</strong> «El nombre es obligatorio», «La descripcion es obligatoria» y «La categoria es obligatoria»; si el backend rechaza los datos, el formulario muestra su mensaje.
+</li>
+<li>
+<strong>Modelado:</strong> el panel «Revisión del modelo» muestra advertencias como “«Recibir solicitud» no tiene camino de entrada”; las eliminaciones piden confirmación; la reactivación de usuarios muestra «fue reactivado».
+</li>
+</ul>
+<p><strong>Pruebas de compatibilidad y accesibilidad (si aplica):</strong> la suite E2E se ejecuta en Chrome sin ventana (Linux) con una ventana fija de 1366×900, y las capturas de este documento se tomaron en Chrome sobre Windows contra el despliegue. No se ejecutaron pruebas formales en Firefox o Safari ni auditorías automáticas de accesibilidad (axe o Lighthouse); quedan como pendientes.</p>
+<h2 id="3-backend">3. Backend</h2>
+<p><strong>Endpoints o servicios evaluados:</strong> colección encadenada Facimus-HU-Flow (69 peticiones y 113 aserciones) sobre /api/v1/empresas, /auth (login y refresh), /usuarios, /roles, /procesos (búsqueda, detalle, historial y estado), /pools, /lanes (incluido /lanes/orden), /actividades, /gateways, /arcos, /eventos-mensaje, /mensajes y /correlacion. La colección Facimus-Procesos-API (53 peticiones) sirve como catálogo de los endpoints documentados en Swagger.</p>
+<p><strong>Reglas de negocio y validaciones:</strong> casos negativos con el código esperado: NIT duplicado (409); lane en un pool de caja negra (409); arco sin condición desde un gateway exclusivo (409); eliminar un rol sin uso (204); reordenar lanes; recrear la correlación antes de publicar; y eliminación lógica: el proceso sale de la lista de activos y aparece con activo=false. Las pruebas de integración del backend cubren además el bloqueo del modelado en procesos inactivos y la unicidad del correo en todo el sistema.</p>
+<p><strong>Persistencia y recuperación de modelos BPMN:</strong> cada elemento creado se vuelve a leer desde PostgreSQL 18.6 (listas, detalle, historial y correlación); las ediciones se confirman con una lectura posterior. El escenario CP-04 de carga consulta el diagrama completo (GET /api/v1/procesos/{id}/diagrama), que el editor usa para dibujar el modelo (figura 1).</p>
+<p><strong>Autenticación / autorización y errores:</strong> sin token → 401; contraseña incorrecta → 401; refresh válido → 200 con tokens nuevos; refresh con un access token → 401; refresh sin el campo refreshToken → 400; endpoint protegido con un refresh token → 401; un usuario SOLO_LECTURA consulta procesos (200) pero no puede crearlos (403). JUnit complementa con la matriz de autorización por rol (31 combinaciones) y el aislamiento entre empresas (47 casos: un recurso de otra empresa responde 404 y no se modifica).</p>
+<h2 id="4-ejecucion-y-defectos">4. Ejecución y defectos</h2>
+<p><strong>Procedimiento de ejecución:</strong></p>
+<ul>
+<li>
+<strong>Backend:</strong> en cada pull request, el job «Postman y JMeter (VM beta-back)» ejecuta newman run postman/&lt;colección&gt;.postman_collection.json --env-var baseUrl=&lt;url&gt; --reporters cli,htmlextra,junit,json. Localmente se usa el Collection Runner de Postman en orden secuencial.
+</li>
+<li>
+<strong>Frontend:</strong> el job «Pruebas E2E (Selenium)» ejecuta python -m pytest e2e -v contra la imagen del front recién construida (documento 07).
+</li>
+<li>
+<strong>Despliegue:</strong> recorrido manual del proceso de ejemplo en el editor y captura de evidencias.
+</li>
+</ul>
+<p><strong>Resultado esperado frente al obtenido:</strong> Facimus-HU-Flow: 69 de 69 peticiones con el código esperado (incluidos 9 casos negativos) y 113 de 113 aserciones aprobadas, con tiempo medio de 155,2 ms. Suite E2E: 23 de 23 casos aprobados. Facimus-Procesos-API: 0 fallos según Newman, pero solo 3 de sus 53 peticiones tienen aserciones y 30 respondieron 400/404 (defecto DF-08).</p>
+<p><strong>Defectos y criticidad:</strong> se registraron ocho defectos (tabla «Defectos»): siete corregidos y uno abierto, de severidad media, que afecta a la colección de pruebas y no al producto. Las correcciones de severidad alta quedaron cubiertas por pruebas automáticas para evitar regresiones.</p>
+<p><strong>Evidencias: capturas, respuestas API, logs:</strong> reporte HTML de Newman (artefacto reporte-postman de la ejecución <a href="https://github.com/Facimus-Curiositatem/Beta-back/actions/runs/45106746670/attempts/2" rel="noopener noreferrer" target="_blank">#45106746670 (intento 2)</a>), reporte pytest-html de Selenium (<a href="https://github.com/Facimus-Curiositatem/Beta-front/actions/runs/45108415804" rel="noopener noreferrer" target="_blank">ejecución #45108415804</a>) y capturas del despliegue.</p>
+<figure>
+<img alt="Figura 3. Reporte de Newman para Facimus-HU-Flow: 69 peticiones, 113 aserciones, 0 fallos." height="848" loading="lazy" src="img/05_Pruebas_Funcionales/figura-3.png" width="1482"/>
+<figcaption>
+Figura 3. Reporte de Newman para Facimus-HU-Flow: 69 peticiones, 113 aserciones, 0 fallos.
+</figcaption>
+</figure>
+<h2 id="5-conclusiones">5. Conclusiones</h2>
+<p><strong>Cobertura funcional:</strong> el backend cubre las 28 historias con la colección encadenada y las pruebas de integración. En el frontend, la suite E2E cubre login, registro, procesos, modelado (pools, lanes, actividades, gateways y arcos), usuarios y roles. Procesos compartidos, permisos de estructura, eventos de mensaje, mensajes y correlación se prueban en el frontend con pruebas unitarias (Karma) y en el backend con JUnit y Postman, pero aún no tienen casos E2E.</p>
+<p><strong>Casos aprobados y fallidos:</strong> backend 69/69 peticiones y 113/113 aserciones; frontend 23/23 casos E2E. Hubo un fallo histórico: dos casos de login fallaron el 23/11/2026 tras el pulido visual y se corrigieron el mismo día (DF-07).</p>
+<p><strong>Pendientes y acciones correctivas:</strong></p>
+<ul>
+<li>
+Corregir la colección Facimus-Procesos-API: mover la eliminación del proceso al final, encadenar los ids con variables y agregar aserciones de código en cada petición (DF-08).
+</li>
+<li>
+Agregar casos E2E para procesos compartidos, permisos de estructura, eventos de mensaje y correlación.
+</li>
+<li>
+Ejecutar la suite E2E en Firefox o Edge y una auditoría de accesibilidad (axe o Lighthouse).
+</li>
+</ul>
+<h3 id="casos-funcionales-frontend">Casos funcionales frontend</h3>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+<caption>
+Tabla 1. Casos funcionales del frontend. CF-F01 a CF-F14 se ejecutan con la suite E2E (documento 07).
+</caption>
+
+<thead>
+<tr>
+<th><strong>ID</strong></th>
+<th><strong>Historia / pantalla</strong></th>
+<th><strong>Pasos</strong></th>
+<th><strong>Esperado</strong></th>
+<th><strong>Obtenido / estado</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="doc-id">CF-F01</td>
+<td>H1 · Login</td>
+<td>Ingresar correo y contraseña del administrador</td>
+<td>Abre /procesos y muestra «Cerrar sesión»</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-F02</td>
+<td>H1 · Login</td>
+<td>Ingresar un correo inexistente</td>
+<td>Mensaje de error; sigue en /login</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-F03</td>
+<td>H1 · Login</td>
+<td>Enviar vacío; luego un correo mal formado</td>
+<td>Mensajes de obligatoriedad y de formato</td>
+<td>Aprobado (falló el 23/11; corregido en PR #42)</td>
+</tr>
+<tr>
+<td class="doc-id">CF-F04</td>
+<td>H1 · Rutas protegidas</td>
+<td>Abrir /procesos sin sesión; cerrar sesión y volver</td>
+<td>Redirige a /login</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-F05</td>
+<td>H1 · Registro de empresa</td>
+<td>Enviar vacío; registrar una empresa e ingresar</td>
+<td>Seis campos marcados; el administrador ve sus opciones</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-F06</td>
+<td>H3 · Procesos</td>
+<td>Crear proceso con nombre, descripción y categoría</td>
+<td>Detalle en estado BORRADOR</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-F07</td>
+<td>H3 · Procesos</td>
+<td>Guardar el formulario vacío</td>
+<td>Tres mensajes de campo obligatorio</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-F08</td>
+<td>H3 · Procesos</td>
+<td>Editar y luego publicar</td>
+<td>Datos actualizados; estado PUBLICADO</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-F09</td>
+<td>H3 · Procesos</td>
+<td>Eliminar un proceso</td>
+<td>Sale de activos; aparece en «inactivos»</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-F10</td>
+<td>H5 · Pools y lanes</td>
+<td>Crear pool tipo CLIENTE y lane con rol</td>
+<td>Listados con su tipo y rol</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-F11</td>
+<td>H6 · Actividades y gateways</td>
+<td>Crear actividad USUARIO y gateway PARALELO</td>
+<td>Listados con su tipo</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-F12</td>
+<td>H7 · Arcos</td>
+<td>Crear arco actividad → gateway con etiqueta</td>
+<td>Arco visible en la lista del pool</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-F13</td>
+<td>H2 · Usuarios</td>
+<td>Crear usuario EDITOR; desactivar y reactivar</td>
+<td>Activo → Inactivo → Activo con aviso</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-F14</td>
+<td>H8 · Roles</td>
+<td>Crear, editar y eliminar un rol sin uso</td>
+<td>Rol creado, renombrado y eliminado</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-F15</td>
+<td>Editor de diagramas</td>
+<td>Abrir el diagrama de «Solicitud de Vacaciones» y seleccionar el gateway</td>
+<td>Modelo completo, propiedades y revisión del modelo</td>
+<td>Verificado en el despliegue (figuras 1 y 2)</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="casos-funcionales-backend">Casos funcionales backend</h3>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+<caption>
+Tabla 2. Casos funcionales del backend (colección Facimus-HU-Flow, ejecución #45106746670 (intento 2)).
+</caption>
+
+<thead>
+<tr>
+<th><strong>ID</strong></th>
+<th><strong>Endpoint / regla</strong></th>
+<th><strong>Entrada</strong></th>
+<th><strong>Esperado</strong></th>
+<th><strong>Obtenido / estado</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="doc-id">CF-B01</td>
+<td>POST /empresas</td>
+<td>Empresa y administrador nuevos</td>
+<td>201 con ids</td>
+<td>201 · aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-B02</td>
+<td>POST /empresas</td>
+<td>NIT ya registrado</td>
+<td>409</td>
+<td>409 · aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-B03</td>
+<td>POST /auth/login</td>
+<td>Credenciales correctas / clave incorrecta</td>
+<td>200 con tokens / 401</td>
+<td>200 / 401 · aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-B04</td>
+<td>GET /procesos</td>
+<td>Sin token / con refresh token</td>
+<td>401 / 401</td>
+<td>401 / 401 · aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-B05</td>
+<td>POST /auth/refresh</td>
+<td>Refresh válido / access token / sin campo</td>
+<td>200 / 401 / 400</td>
+<td>200 / 401 / 400 · aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-B06</td>
+<td>/usuarios</td>
+<td>Crear editor y lector; desactivar y reactivar</td>
+<td>201 y 200</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-B07</td>
+<td>/roles</td>
+<td>Crear, listar, editar y eliminar un rol sin uso</td>
+<td>201, 200 y 204</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-B08</td>
+<td>/procesos</td>
+<td>Crear, listar, buscar, detalle, editar e historial</td>
+<td>201 y 200</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-B09</td>
+<td>POST /pools/{externo}/lanes</td>
+<td>Lane en pool de caja negra</td>
+<td>409</td>
+<td>409 · aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-B10</td>
+<td>PATCH /pools/{id}/lanes/orden</td>
+<td>Nuevo orden de lanes</td>
+<td>200</td>
+<td>200 · aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-B11</td>
+<td>POST /arcos</td>
+<td>Arco sin condición desde gateway exclusivo</td>
+<td>409</td>
+<td>409 · aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-B12</td>
+<td>/eventos-mensaje, /mensajes, /correlacion</td>
+<td>THROW, mensaje a pool externo y correlación</td>
+<td>201, 200 y 204</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-B13</td>
+<td>PATCH /procesos/{id}</td>
+<td>Estado PUBLICADO con modelo válido</td>
+<td>200</td>
+<td>200 · aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-B14</td>
+<td>POST /procesos</td>
+<td>Usuario SOLO_LECTURA</td>
+<td>403 (GET 200)</td>
+<td>403 · aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CF-B15</td>
+<td>DELETE /procesos/{id}</td>
+<td>Baja lógica</td>
+<td>204; fuera de activos; visible con activo=false</td>
+<td>Aprobado</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="defectos">Defectos</h3>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+<caption>
+Tabla 3. Defectos registrados y su estado.
+</caption>
+
+<thead>
+<tr>
+<th><strong>ID</strong></th>
+<th><strong>Severidad</strong></th>
+<th><strong>Descripción</strong></th>
+<th><strong>Estado / enlace</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="doc-id">DF-01</td>
+<td>Alta</td>
+<td>El login distinguía mayúsculas en el correo y rechazaba a usuarios válidos</td>
+<td>Corregido · Beta-back PR #37</td>
+</tr>
+<tr>
+<td class="doc-id">DF-02</td>
+<td>Alta</td>
+<td>Se podía crear, editar o eliminar elementos en procesos inactivos</td>
+<td>Corregido · PR #37 (InvariantesModeladoIntegracionTest)</td>
+</tr>
+<tr>
+<td class="doc-id">DF-03</td>
+<td>Media</td>
+<td>Un nodo eliminado seguía reservando su nombre</td>
+<td>Corregido · PR #37</td>
+</tr>
+<tr>
+<td class="doc-id">DF-04</td>
+<td>Alta</td>
+<td>Un mismo correo podía registrarse en dos empresas y Swagger quedaba expuesto en producción</td>
+<td>Corregido · PR #43</td>
+</tr>
+<tr>
+<td class="doc-id">DF-05</td>
+<td>Alta</td>
+<td>El enlace de invitación apuntaba a la dirección local y no a la URL pública del front</td>
+<td>Corregido · Beta-front PR #26 y #31</td>
+</tr>
+<tr>
+<td class="doc-id">DF-06</td>
+<td>Media</td>
+<td>No se permitía que un evento Catch tuviera el mismo nombre que su Throw</td>
+<td>Corregido · Beta-back PR #52</td>
+</tr>
+<tr>
+<td class="doc-id">DF-07</td>
+<td>Baja</td>
+<td>Dos casos E2E de login fallaron por mensajes con tilde tras el pulido visual; el despliegue de main quedó bloqueado</td>
+<td>Corregido · Beta-front PR #42</td>
+</tr>
+<tr>
+<td class="doc-id">DF-08</td>
+<td>Media</td>
+<td>Facimus-Procesos-API: 3 aserciones en 53 peticiones; elimina el proceso en la petición 16 y 30 peticiones siguientes responden 400/404 sin fallar</td>
+<td>Abierto · corregir orden, variables y aserciones</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="anexos-y-referencias">Anexos y referencias</h2>
+<p><strong>Repositorio / documentación:</strong></p>
+<ul>
+<li>
+Backend: <a href="https://github.com/Facimus-Curiositatem/Beta-back" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-back</a> (código, pruebas en src/test, colecciones en postman/, planes en jmeter/, workflow en .github/workflows/ci.yml).
+</li>
+<li>
+Frontend: <a href="https://github.com/Facimus-Curiositatem/Beta-front" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-front</a> (Angular, pruebas unitarias *.spec.ts, suite E2E en e2e/).
+</li>
+<li>
+Documentación: <a href="https://github.com/Facimus-Curiositatem/Beta-Wiki" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-Wiki</a>.
+</li>
+<li>
+Aplicación desplegada: <a href="https://beta-front.taila95c4c.ts.net" rel="noopener noreferrer" target="_blank">https://beta-front.taila95c4c.ts.net</a>.
+</li>
+</ul>
+<p><strong>Capturas, diagramas, reportes, logs u otras evidencias:</strong></p>
+<ul>
+<li>
+Postman y JMeter: <a href="https://github.com/Facimus-Curiositatem/Beta-back/actions/runs/45106746670/attempts/2" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-back/actions/runs/45106746670/attempts/2</a> (artefacto reporte-postman con HTML, JSON y JUnit de Newman).
+</li>
+<li>
+Selenium: <a href="https://github.com/Facimus-Curiositatem/Beta-front/actions/runs/45108415804" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-front/actions/runs/45108415804</a> (artefacto reporte-e2e).
+</li>
+<li>
+Proceso de ejemplo en el despliegue: <a href="https://beta-front.taila95c4c.ts.net/procesos/48/diagrama" rel="noopener noreferrer" target="_blank">https://beta-front.taila95c4c.ts.net/procesos/48/diagrama</a>.
+</li>
+</ul>
+</article>
+</div>

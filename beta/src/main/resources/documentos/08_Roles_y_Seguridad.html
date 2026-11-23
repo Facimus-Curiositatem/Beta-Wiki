@@ -1,0 +1,449 @@
+<div class="doc-layout">
+<nav class="doc-indice" aria-label="Contenido del documento">
+<p class="doc-indice-titulo">Contenido</p>
+<ol><li><a href="#ficha-del-documento">Ficha del documento</a></li><li><a href="#1-alcance-de-seguridad">1. Alcance de seguridad</a></li><li><a href="#2-identificacion-de-roles">2. Identificación de roles</a></li><li><a href="#3-matriz-de-roles-y-permisos">3. Matriz de roles y permisos</a></li><li><a href="#4-autenticacion-y-gestion-de-sesiones">4. Autenticación y gestión de sesiones</a></li><li><a href="#5-autorizacion-y-proteccion-del-backend">5. Autorización y protección del Backend</a></li><li><a href="#6-seguridad-del-frontend-y-de-los-datos">6. Seguridad del Frontend y de los datos</a></li><li><a href="#7-riesgos-y-controles">7. Riesgos y controles</a></li><li><a href="#8-validacion-y-pruebas-de-seguridad">8. Validación y pruebas de seguridad</a></li><li><a href="#9-evidencias-y-conclusiones">9. Evidencias y conclusiones</a></li></ol>
+</nav>
+<article class="doc-cuerpo">
+<h2 id="ficha-del-documento">Ficha del documento</h2>
+<div class="doc-tabla-scroll"><table class="doc-ficha">
+
+<thead>
+<tr>
+<th><strong>Dato</strong></th>
+<th><strong>Información</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">Institución / asignatura</th>
+<td>Pontificia Universidad Javeriana · Desarrollo Web (34807), periodo 2026-30</td>
+</tr>
+<tr>
+<th scope="row">Nombre del proyecto</th>
+<td>Facimus Procesos (Beta): herramienta web multiempresa para modelar procesos BPMN</td>
+</tr>
+<tr>
+<th scope="row">Equipo / integrantes</th>
+<td>Samuel Bonilla (Mundolel), Samuel Giraldo (Segiraldo0610), Juan Guillermo Gómez (GomezJuangl) y Andrés Ospina (andyospina)</td>
+</tr>
+<tr>
+<th scope="row">Docente</th>
+<td>Pablo Andrés Márquez Fernández</td>
+</tr>
+<tr>
+<th scope="row">Fecha / versión</th>
+<td>23/11/2026 · versión 1.0 (backend a3f88ab, frontend 7c61265)</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="1-alcance-de-seguridad">1. Alcance de seguridad</h2>
+<p><strong>Objetivo de seguridad del sistema BPMN:</strong> que solo usuarios autenticados de cada empresa accedan a sus propios procesos BPMN, con las acciones que permite su rol, sin exponer credenciales ni datos de otras empresas.</p>
+<p><strong>Activos y datos a proteger:</strong> credenciales (hash BCrypt), access y refresh tokens, datos de empresas y usuarios (correo y rol), procesos y modelos BPMN con su historial, tokens de invitación y secretos de despliegue (JWT_SECRET y DB_PASSWORD).</p>
+<p><strong>Usuarios internos y externos:</strong> internos, dentro de una empresa: ADMINISTRADOR, EDITOR y SOLO_LECTURA. Externos: el visitante sin sesión (solo registra una empresa, inicia sesión o acepta una invitación) y los usuarios de empresas invitadas, que leen los procesos compartidos. El equipo opera las VMs y el CI.</p>
+<p><strong>Supuestos y restricciones:</strong> el HTTPS lo termina Tailscale Funnel; el backend solo es accesible en la red de la universidad y la tailnet; no hay proveedor de identidad externo; la aplicación no recibe archivos (no importa BPMN/XML); la API no guarda estado de sesión.</p>
+<h2 id="2-identificacion-de-roles">2. Identificación de roles</h2>
+<p><strong>Criterios para definir los roles:</strong> mínimo privilegio y separación de funciones: la administración de la empresa (usuarios, roles, permisos, compartir y eliminar) se separa de la edición del modelo y de la consulta. Los roles de proceso (RolProceso) solo indican el responsable de cada lane en el diagrama; no otorgan permisos.</p>
+<p><strong>Responsabilidades por rol:</strong> el ADMINISTRADOR gobierna la empresa y es el único que elimina; el EDITOR construye y publica los modelos; el SOLO_LECTURA consulta; el usuario de una empresa invitada solo lee lo que le comparten (tabla de roles).</p>
+<p><strong>Proceso de asignación, modificación y revocación de roles:</strong> el registro de la empresa crea su primer ADMINISTRADOR. El administrador crea usuarios con un rol (POST /usuarios) o los invita por correo (token UUID de un solo uso, válido 48 h) y puede cambiar el rol o desactivar y reactivar (PATCH /usuarios/{id}). Como el filtro JWT recarga el usuario en cada petición, la desactivación y el cambio de rol se aplican de inmediato, incluso con un token vigente.</p>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+
+<thead>
+<tr>
+<th><strong>Rol</strong></th>
+<th><strong>Descripción</strong></th>
+<th><strong>Responsabilidades</strong></th>
+<th><strong>Acceso permitido</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ADMINISTRADOR</td>
+<td>Usuario que registra la empresa o a quien se asigna</td>
+<td>Usuarios e invitaciones, roles de proceso, permisos de estructura, procesos compartidos, eliminación</td>
+<td>Todas las operaciones de su empresa</td>
+</tr>
+<tr>
+<td>EDITOR</td>
+<td>Modelador de procesos</td>
+<td>Crear, editar y publicar procesos y elementos del modelo</td>
+<td>Lectura y escritura del modelo; pools y lanes según permisos de estructura; no elimina ni administra</td>
+</tr>
+<tr>
+<td>SOLO_LECTURA</td>
+<td>Usuario de consulta</td>
+<td>Consultar procesos y diagramas</td>
+<td>Solo lectura (GET)</td>
+</tr>
+<tr>
+<td>Usuario de empresa invitada</td>
+<td>Cualquier usuario de otra empresa con la que se comparte un proceso</td>
+<td>Consultar el proceso compartido</td>
+<td>Solo lectura del proceso compartido</td>
+</tr>
+<tr>
+<td>Visitante sin sesión</td>
+<td>Persona sin cuenta o sin sesión</td>
+<td>Registrar empresa, iniciar sesión, aceptar invitación</td>
+<td>Solo endpoints públicos</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="3-matriz-de-roles-y-permisos">3. Matriz de roles y permisos</h2>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+
+<thead>
+<tr>
+<th><strong>Recurso / operación</strong></th>
+<th><strong>Rol</strong></th>
+<th><strong>Permiso (sí/no)</strong></th>
+<th><strong>Regla o restricción</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Consultar procesos y diagramas (GET)</td>
+<td>ADMINISTRADOR, EDITOR, SOLO_LECTURA</td>
+<td>Sí</td>
+<td>Solo de su empresa (empresaId del token)</td>
+</tr>
+<tr>
+<td>Crear y editar procesos (POST, PUT)</td>
+<td>ADMINISTRADOR, EDITOR</td>
+<td>Sí</td>
+<td>SOLO_LECTURA recibe 403</td>
+</tr>
+<tr>
+<td>Publicar proceso (PATCH estado)</td>
+<td>ADMINISTRADOR, EDITOR</td>
+<td>Sí</td>
+<td>El modelo debe pasar ValidacionModeloService</td>
+</tr>
+<tr>
+<td>Modelar actividades, gateways, eventos, arcos, mensajes y correlación</td>
+<td>ADMINISTRADOR, EDITOR</td>
+<td>Sí</td>
+<td>Solo en procesos activos; reglas BPMN (409)</td>
+</tr>
+<tr>
+<td>Crear, editar y eliminar pools y lanes</td>
+<td>ADMINISTRADOR, EDITOR</td>
+<td>Según permiso</td>
+<td>PermisoEstructuraService.validar; solo el ADMINISTRADOR elimina</td>
+</tr>
+<tr>
+<td>Eliminar procesos y elementos del modelo (DELETE)</td>
+<td>ADMINISTRADOR</td>
+<td>Sí</td>
+<td>EDITOR y SOLO_LECTURA reciben 403; la eliminación es lógica</td>
+</tr>
+<tr>
+<td>Eliminar procesos y elementos del modelo (DELETE)</td>
+<td>EDITOR, SOLO_LECTURA</td>
+<td>No</td>
+<td>403</td>
+</tr>
+<tr>
+<td>Gestionar usuarios e invitaciones (/usuarios/**)</td>
+<td>ADMINISTRADOR</td>
+<td>Sí</td>
+<td>EDITOR recibe 403 incluso al consultar</td>
+</tr>
+<tr>
+<td>Roles de proceso: consultar / crear, editar, eliminar</td>
+<td>Todos / ADMINISTRADOR</td>
+<td>Sí / Solo admin</td>
+<td>EDITOR recibe 403 al crear o eliminar</td>
+</tr>
+<tr>
+<td>Permisos de estructura (/permisos-estructura/**)</td>
+<td>ADMINISTRADOR</td>
+<td>Sí</td>
+<td>Configura qué puede hacer cada rol con pools y lanes</td>
+</tr>
+<tr>
+<td>Compartir y dejar de compartir un proceso</td>
+<td>ADMINISTRADOR</td>
+<td>Sí</td>
+<td>Solo la empresa dueña; la invitada solo lee</td>
+</tr>
+<tr>
+<td>Registrar empresa, login, refresh y aceptar invitación</td>
+<td>Sin sesión</td>
+<td>Sí</td>
+<td>Endpoints públicos con validación de entrada</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="4-autenticacion-y-gestion-de-sesiones">4. Autenticación y gestión de sesiones</h2>
+<p><strong>Mecanismo de inicio de sesión:</strong> POST /api/v1/auth/login con correo (sin distinguir mayúsculas) y contraseña; el backend verifica el hash BCrypt y que el usuario esté activo, y responde un access token (JWT HS256 de 15 min con el correo, usuarioId, empresaId, rol y emisor) y un refresh token (7 días, tipo refresh y sin rol). El front los guarda y su interceptor agrega Authorization: Bearer a cada petición.</p>
+<p><strong>Registro y recuperación de cuenta (si aplica):</strong> registro público de empresa, que crea la empresa y su administrador en una sola transacción, con correo único en todo el sistema; los demás usuarios los crea el administrador o llegan por invitación (token UUID de un solo uso, 48 h). No hay recuperación de contraseña en esta versión.</p>
+<p><strong>Políticas de contraseñas o proveedor de identidad:</strong> no se usa proveedor externo. Longitud mínima de 6 caracteres en el registro y en la creación por el administrador, y de 8 al aceptar una invitación (a unificar); se almacenan con BCrypt (costo 10) y nunca se devuelven en las respuestas.</p>
+<p><strong>Expiración y cierre de sesión:</strong> el access token vence a los 15 min y el refresh a los 7 días. El refresh emite tokens nuevos tras recargar el usuario (si está desactivado responde 401). El cierre de sesión no guarda estado: el cliente descarta los tokens y el servidor no los revoca; para cortar el acceso de inmediato se desactiva al usuario.</p>
+<p><strong>Protección de credenciales y tokens:</strong> HTTPS en la URL pública; contraseñas con BCrypt; JWT_SECRET por variable de entorno (obligatorio en producción, generado con openssl); el filtro rechaza un refresh token usado como access token y /auth/refresh rechaza un access token; los DTO nunca incluyen el hash; las pruebas E2E evitan imprimir credenciales (--tb=short).</p>
+<h2 id="5-autorizacion-y-proteccion-del-backend">5. Autorización y protección del Backend</h2>
+<p><strong>Verificación de permisos en cada endpoint:</strong> SecurityConfig define reglas por método y ruta (permitAll, authenticated, hasAuthority y hasAnyAuthority). JwtAuthenticationFilter valida firma, emisor, vigencia y tipo del token y arma el principal desde la base de datos. Los servicios agregan controles de dominio: permisos de estructura, proceso activo y pertenencia a la empresa.</p>
+<p><strong>Control de acceso a procesos BPMN propios y compartidos:</strong> toda consulta pasa por RepositorioTenant (por ejemplo, findByIdAndEmpresaId) con el empresaId del token: un id de otra empresa responde 404 sin revelar que existe, y el empresaId enviado en el cuerpo se ignora. Los procesos compartidos se leen a través de ProcesoCompartido en modo de solo lectura; solo el administrador de la empresa dueña comparte o retira el acceso.</p>
+<p><strong>Respuesta ante acceso no autorizado (401/403):</strong> 401 (JwtAuthEntryPoint) ante un token ausente, inválido, vencido o del tipo equivocado; 403 (JwtAccessDeniedHandler) cuando el rol no alcanza. Ambos en formato ProblemDetail. En el front, un 401 dispara el refresh y, si falla, el retorno al login; el rolGuard redirige si falta el rol.</p>
+<p><strong>Validación de entradas y archivos BPMN/XML:</strong> Bean Validation en los DTO (@Valid, @NotBlank, @Email, @Size) responde 400 con el detalle; un JSON mal formado, 400; una regla de negocio violada, 409. La aplicación no acepta archivos BPMN/XML (el modelo se construye por la API), así que no hay validación de XML.</p>
+<p><strong>Configuración de CORS y limitación de solicitudes (si aplica):</strong> CORS solo para los orígenes de CORS_ALLOWED_ORIGINS; en producción el front usa el mismo origen a través de nginx. No hay limitación de solicitudes ni bloqueo por intentos fallidos (pendiente).</p>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+
+<thead>
+<tr>
+<th><strong>Endpoint / acción</strong></th>
+<th><strong>Rol autorizado</strong></th>
+<th><strong>Control implementado</strong></th>
+<th><strong>Evidencia</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST /api/v1/auth/login y /auth/refresh</td>
+<td>Público</td>
+<td>Credenciales BCrypt; tipo refresh obligatorio</td>
+<td>SeguridadIntegracionTest; Postman CF-B03 y CF-B05</td>
+</tr>
+<tr>
+<td>GET /api/v1/**</td>
+<td>Cualquier usuario autenticado</td>
+<td>Filtro JWT y empresaId</td>
+<td>AutorizacionPorRolTest: SOLO_LECTURA GET → 200</td>
+</tr>
+<tr>
+<td>/api/v1/usuarios/** y /permisos-estructura/**</td>
+<td>ADMINISTRADOR</td>
+<td>hasAuthority(ADMINISTRADOR)</td>
+<td>EDITOR GET /usuarios → 403</td>
+</tr>
+<tr>
+<td>POST/PUT/DELETE /api/v1/roles/**</td>
+<td>ADMINISTRADOR</td>
+<td>hasAuthority(ADMINISTRADOR)</td>
+<td>EDITOR POST y DELETE /roles → 403</td>
+</tr>
+<tr>
+<td>DELETE procesos y elementos del modelo</td>
+<td>ADMINISTRADOR</td>
+<td>hasAuthority(ADMINISTRADOR)</td>
+<td>EDITOR y SOLO_LECTURA DELETE → 403</td>
+</tr>
+<tr>
+<td>POST/DELETE /procesos/{id}/compartidos</td>
+<td>ADMINISTRADOR</td>
+<td>hasAuthority(ADMINISTRADOR)</td>
+<td>ProcesoCompartidoControllerTest</td>
+</tr>
+<tr>
+<td>POST, PUT y PATCH del resto de /api/v1/**</td>
+<td>ADMINISTRADOR, EDITOR</td>
+<td>hasAnyAuthority</td>
+<td>SOLO_LECTURA POST /procesos → 403</td>
+</tr>
+<tr>
+<td>Pools y lanes (crear, editar, eliminar)</td>
+<td>Según permiso de estructura</td>
+<td>PermisoEstructuraService.validar</td>
+<td>PermisoEstructuraServiceTest</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="6-seguridad-del-frontend-y-de-los-datos">6. Seguridad del Frontend y de los datos</h2>
+<p><strong>Restricción de funciones visibles según rol (sin sustituir controles del servidor):</strong> rolGuard exige ADMINISTRADOR en las rutas de roles, permisos de estructura y compartir (5 rutas); authGuard protege todas las rutas privadas; los botones y opciones de administración solo se muestran si tokens.esAdministrador(). El servidor valida igual cada petición, como lo comprueban las pruebas de API.</p>
+<p><strong>Protección contra XSS y CSRF (según arquitectura):</strong> Angular escapa la interpolación y el código no usa innerHTML ni bypassSecurityTrust. CSRF no aplica porque no hay cookies de sesión y el JWT viaja en el encabezado (SonarCloud S4502 revisada y aceptada). Los tokens en localStorage quedan expuestos ante un XSS; como mejora se propone el refresh token en una cookie HttpOnly y una CSP.</p>
+<p><strong>Uso de HTTPS y manejo de datos sensibles:</strong> la URL pública usa HTTPS con certificado válido de Tailscale (*.ts.net); el backend solo escucha en la red de la universidad y la tailnet; el JWT no lleva datos sensibles (ids y rol). nginx no envía encabezados de seguridad (HSTS, CSP, X-Frame-Options) y expone su versión (pendiente).</p>
+<p><strong>Almacenamiento y respaldos de diagramas BPMN:</strong> los modelos se guardan en PostgreSQL (una tabla por tipo de elemento) con eliminación lógica, que permite recuperarlos, e historial de cambios con autor. No hay respaldo automático de la base (pendiente: pg_dump programado).</p>
+<p><strong>Gestión de secretos y variables de entorno:</strong> GitHub Secrets para el CI; /opt/beta/.env con permisos 600 en las VMs, fuera del repositorio (solo .env.example); JWT_SECRET obligatorio en producción; Swagger y la consola H2 apagados en producción; credenciales temporales del CI borradas al terminar.</p>
+<h2 id="7-riesgos-y-controles">7. Riesgos y controles</h2>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+
+<thead>
+<tr>
+<th><strong>Riesgo / amenaza</strong></th>
+<th><strong>Impacto</strong></th>
+<th><strong>Medida de mitigación</strong></th>
+<th><strong>Responsable</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Robo de tokens por XSS (localStorage)</td>
+<td>Alto</td>
+<td>Sin HTML dinámico y access de 15 min; pendiente cookie HttpOnly y CSP</td>
+<td>Juan Guillermo Gómez (propuesto)</td>
+</tr>
+<tr>
+<td>Refresh token robado o sesión sin revocar</td>
+<td>Alto</td>
+<td>Desactivar al usuario corta el acceso al instante; pendiente rotación o lista de revocación</td>
+<td>Juan Guillermo Gómez (propuesto)</td>
+</tr>
+<tr>
+<td>Acceso a datos de otra empresa (IDOR)</td>
+<td>Crítico</td>
+<td>RepositorioTenant con empresaId del token; 47 pruebas de aislamiento</td>
+<td>Equipo backend</td>
+</tr>
+<tr>
+<td>Escalada de privilegios</td>
+<td>Alto</td>
+<td>Reglas por ruta y rol; matriz de 31 combinaciones en el CI</td>
+<td>Equipo backend</td>
+</tr>
+<tr>
+<td>Fuerza bruta en el login</td>
+<td>Medio</td>
+<td>Costo de BCrypt; pendiente limitación de solicitudes</td>
+<td>Andrés Ospina (propuesto)</td>
+</tr>
+<tr>
+<td>Fuga de secretos</td>
+<td>Crítico</td>
+<td>GitHub Secrets, .env con permisos 600, JWT_SECRET obligatorio, Swagger apagado</td>
+<td>Samuel Bonilla</td>
+</tr>
+<tr>
+<td>Clickjacking por falta de encabezados</td>
+<td>Medio</td>
+<td>Pendiente: CSP frame-ancestors, X-Content-Type-Options y HSTS en nginx</td>
+<td>Samuel Giraldo (propuesto)</td>
+</tr>
+<tr>
+<td>Pérdida de datos de la base</td>
+<td>Alto</td>
+<td>Eliminación lógica e historial; pendiente pg_dump programado</td>
+<td>Samuel Bonilla (propuesto)</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="8-validacion-y-pruebas-de-seguridad">8. Validación y pruebas de seguridad</h2>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+
+<thead>
+<tr>
+<th><strong>ID</strong></th>
+<th><strong>Escenario / caso negativo</strong></th>
+<th><strong>Resultado esperado</strong></th>
+<th><strong>Resultado obtenido</strong></th>
+<th><strong>Evidencia</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="doc-id">SEG-01</td>
+<td>Endpoint protegido sin token</td>
+<td>401</td>
+<td>401</td>
+<td>SeguridadIntegracionTest; Postman CF-B04; E2E; smoke test 23/11</td>
+</tr>
+<tr>
+<td class="doc-id">SEG-02</td>
+<td>Token de otra clave, de otro emisor o vencido</td>
+<td>Rechazado (401)</td>
+<td>Rechazado</td>
+<td>JwtServiceTest (10 casos)</td>
+</tr>
+<tr>
+<td class="doc-id">SEG-03</td>
+<td>Refresh token usado como access token</td>
+<td>401</td>
+<td>401</td>
+<td>Postman HU-Flow; SeguridadIntegracionTest</td>
+</tr>
+<tr>
+<td class="doc-id">SEG-04</td>
+<td>Access token usado en /auth/refresh</td>
+<td>401</td>
+<td>401</td>
+<td>Seguridad_refresh_conAccessToken_devuelve401</td>
+</tr>
+<tr>
+<td class="doc-id">SEG-05</td>
+<td>SOLO_LECTURA intenta crear un proceso</td>
+<td>403</td>
+<td>403</td>
+<td>Postman CF-B14; AutorizacionPorRolTest</td>
+</tr>
+<tr>
+<td class="doc-id">SEG-06</td>
+<td>EDITOR elimina o administra usuarios y roles</td>
+<td>403</td>
+<td>403</td>
+<td>AutorizacionPorRolTest</td>
+</tr>
+<tr>
+<td class="doc-id">SEG-07</td>
+<td>Recurso de otra empresa por id</td>
+<td>404 sin modificarlo</td>
+<td>404</td>
+<td>AislamientoEmpresasIntegracionTest (47)</td>
+</tr>
+<tr>
+<td class="doc-id">SEG-08</td>
+<td>empresaId enviado en el cuerpo</td>
+<td>Se ignora</td>
+<td>Ignorado</td>
+<td>Aislamiento_empresaIdEnElRequest_seIgnora</td>
+</tr>
+<tr>
+<td class="doc-id">SEG-09</td>
+<td>Usuario desactivado pide refresh</td>
+<td>401</td>
+<td>401</td>
+<td>Seguridad_refresh_usuarioDesactivado_devuelve401</td>
+</tr>
+<tr>
+<td class="doc-id">SEG-10</td>
+<td>Cambio de rol antes del refresh</td>
+<td>El token nuevo trae el rol nuevo</td>
+<td>Correcto</td>
+<td>Seguridad_refresh_cambioDeRol_seReflejaEnElTokenNuevo</td>
+</tr>
+<tr>
+<td class="doc-id">SEG-11</td>
+<td>Login con contraseña incorrecta</td>
+<td>401 y error en pantalla</td>
+<td>401</td>
+<td>SeguridadIntegracionTest; E2E de login</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Pruebas para acceso sin sesión:</strong> un endpoint protegido sin token, con un token inválido o con un refresh token responde 401 (JUnit y Postman); en el front, abrir /procesos sin sesión redirige al login (E2E); en producción, /api/v1/procesos sin token responde 401 (smoke test del 23/11/2026).</p>
+<p><strong>Pruebas para usuarios sin permiso:</strong> AutorizacionPorRolTest recorre 31 combinaciones de rol, método y ruta (403 cuando no hay permiso); Postman comprueba que SOLO_LECTURA consulta (200) pero no crea (403).</p>
+<p><strong>Pruebas de acceso a recursos de otro usuario:</strong> AislamientoEmpresasIntegracionTest crea dos empresas y verifica, en 47 casos, que los recursos de una no se pueden leer, modificar ni eliminar desde la otra (404) y que el empresaId del cuerpo se ignora.</p>
+<p><strong>Registro de hallazgos y correcciones:</strong></p>
+<ul>
+<li>
+CSRF señalado por SonarCloud (S4502): exención limitada a la API con JWT (PR #32) y aceptada con justificación.
+</li>
+<li>
+Swagger expuesto y correo repetido entre empresas: corregidos en el PR #43.
+</li>
+<li>
+Login sensible a mayúsculas: corregido en el PR #37.
+</li>
+<li>
+Sesión de un solo token: se agregó el refresh token (PR #53 en el back y PR #39 en el front).
+</li>
+<li>
+Pendientes: encabezados de seguridad, limitación de solicitudes, revocación de refresh tokens y contraseña mínima unificada.
+</li>
+</ul>
+<h2 id="9-evidencias-y-conclusiones">9. Evidencias y conclusiones</h2>
+<p><strong>Diagrama de flujo de autenticación/autorización:</strong> figura 1.</p>
+<p><strong>Enlace a configuración o código relevante (sin secretos):</strong> <a href="https://github.com/Facimus-Curiositatem/Beta-back/blob/main/src/main/java/com/facimus/procesos/security/SecurityConfig.java" rel="noopener noreferrer" target="_blank">SecurityConfig</a>, <a href="https://github.com/Facimus-Curiositatem/Beta-back/blob/main/src/main/java/com/facimus/procesos/security/JwtService.java" rel="noopener noreferrer" target="_blank">JwtService</a>, <a href="https://github.com/Facimus-Curiositatem/Beta-back/blob/main/src/main/java/com/facimus/procesos/security/JwtAuthenticationFilter.java" rel="noopener noreferrer" target="_blank">JwtAuthenticationFilter</a>, <a href="https://github.com/Facimus-Curiositatem/Beta-front/tree/main/src/app/guards" rel="noopener noreferrer" target="_blank">guards</a> e <a href="https://github.com/Facimus-Curiositatem/Beta-front/tree/main/src/app/interceptors" rel="noopener noreferrer" target="_blank">interceptores</a> del front.</p>
+<p><strong>Capturas o reportes de pruebas:</strong> reportes JUnit de la ejecución <a href="https://github.com/Facimus-Curiositatem/Beta-back/actions/runs/45109076116" rel="noopener noreferrer" target="_blank">#45109076116</a>, Postman de la ejecución <a href="https://github.com/Facimus-Curiositatem/Beta-back/actions/runs/45106746670/attempts/2" rel="noopener noreferrer" target="_blank">#45106746670 (intento 2)</a> y SonarCloud con calificación A en seguridad (figura 2).</p>
+<p><strong>Limitaciones conocidas y pendientes:</strong> sin revocación de tokens al cerrar sesión, tokens en localStorage, sin limitación de solicitudes, sin encabezados de seguridad en nginx, contraseña mínima de 6 caracteres, sin recuperación de contraseña y la ruta /h2-console sigue permitida en SecurityConfig (la consola está apagada en producción).</p>
+<figure>
+<img alt="Figura 1. Flujo de autenticación y autorización con access y refresh token." height="1318" loading="lazy" src="img/08_Roles_y_Seguridad/figura-1.png" width="1800"/>
+<figcaption>
+Figura 1. Flujo de autenticación y autorización con access y refresh token.
+</figcaption>
+</figure>
+<figure>
+<img alt="Figura 2. SonarCloud de la rama main: seguridad A, 0 incidencias abiertas." height="775" loading="lazy" src="img/08_Roles_y_Seguridad/figura-2.png" width="1482"/>
+<figcaption>
+Figura 2. SonarCloud de la rama main: seguridad A, 0 incidencias abiertas.
+</figcaption>
+</figure>
+</article>
+</div>

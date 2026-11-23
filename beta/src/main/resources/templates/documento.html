@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${documento.titulo + ' - Beta Wiki'}">Documento - Beta Wiki</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link rel="stylesheet" th:href="@{/css/documentos.css}">
+</head>
+<body>
+
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="contenido doc-contenido">
+        <nav class="doc-migas" aria-label="Ruta de navegación">
+            <a th:href="@{/documentos}">Documentos</a>
+            <span aria-hidden="true">/</span>
+            <span th:text="${documento.titulo}">Título</span>
+        </nav>
+
+        <header class="doc-cabecera">
+            <span class="doc-numero" th:text="${documento.numero}" aria-hidden="true">01</span>
+            <div class="doc-cabecera-texto">
+                <h1 th:text="${documento.titulo}">Título</h1>
+                <p class="doc-meta">Facimus Procesos (Beta) · Entrega final · 23/11/2026 ·
+                    <span th:text="|${documento.paginas} páginas en PDF|">4 páginas en PDF</span></p>
+            </div>
+            <div class="doc-acciones">
+                <a class="doc-boton doc-boton-principal"
+                   th:href="@{/documentos/descargas/{archivo}.pdf(archivo=${documento.archivo})}" download>Descargar PDF</a>
+                <a class="doc-boton"
+                   th:href="@{/documentos/descargas/{archivo}.docx(archivo=${documento.archivo})}" download>Descargar Word</a>
+            </div>
+        </header>
+
+        <div th:utext="${documento.contenido}">Contenido del documento</div>
+
+        <nav class="doc-paginacion" aria-label="Otros documentos">
+            <a th:if="${anterior != null}" class="doc-paginacion-anterior"
+               th:href="@{/documentos/{slug}(slug=${anterior.slug})}">
+                <span>Anterior</span>
+                <strong th:text="${anterior.numero + '. ' + anterior.titulo}">Documento anterior</strong>
+            </a>
+            <a th:if="${siguiente != null}" class="doc-paginacion-siguiente"
+               th:href="@{/documentos/{slug}(slug=${siguiente.slug})}">
+                <span>Siguiente</span>
+                <strong th:text="${siguiente.numero + '. ' + siguiente.titulo}">Documento siguiente</strong>
+            </a>
+        </nav>
+    </main>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>

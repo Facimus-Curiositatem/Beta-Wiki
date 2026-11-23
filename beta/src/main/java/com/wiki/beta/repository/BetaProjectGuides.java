@@ -125,7 +125,7 @@ final class BetaProjectGuides {
 cd Beta-back
 ./mvnw spring-boot:run</code></pre>
                     <p>
-                        En Windows se usa <code>.\mvnw.cmd spring-boot:run</code>.
+                        En Windows se usa <code>.\\mvnw.cmd spring-boot:run</code>.
                         El backend inicia en <code>http://localhost:8080</code>.
                     </p>
 
