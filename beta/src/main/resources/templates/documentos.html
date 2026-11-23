@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentos de la entrega final - Beta Wiki</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link rel="stylesheet" th:href="@{/css/documentos.css}">
+</head>
+<body>
+
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="contenido">
+        <section class="hero" aria-labelledby="titulo-documentos">
+            <h1 id="titulo-documentos">Documentos de la entrega final</h1>
+            <p class="lead">Los ocho documentos del proyecto Facimus Procesos (Beta), diligenciados con las evidencias de
+                GitHub Actions, SonarCloud y el despliegue. Se pueden leer aquí o descargar en PDF y en Word.</p>
+        </section>
+
+        <p th:if="${#lists.isEmpty(documentos)}" class="empty-state">Todavía no hay documentos publicados.</p>
+
+        <ol class="doc-lista" th:unless="${#lists.isEmpty(documentos)}">
+            <li class="doc-tarjeta" th:each="documento : ${documentos}">
+                <span class="doc-numero" th:text="${documento.numero}" aria-hidden="true">01</span>
+                <div class="doc-tarjeta-texto">
+                    <h2>
+                        <a th:href="@{/documentos/{slug}(slug=${documento.slug})}" th:text="${documento.titulo}">Título</a>
+                    </h2>
+                    <p th:text="${documento.descripcion}">Descripción</p>
+                    <p class="doc-meta" th:text="|${documento.paginas} páginas en PDF|">4 páginas en PDF</p>
+                </div>
+                <div class="doc-acciones">
+                    <a class="doc-boton doc-boton-principal" th:href="@{/documentos/{slug}(slug=${documento.slug})}">Leer</a>
+                    <a class="doc-boton" th:href="@{/documentos/descargas/{archivo}.pdf(archivo=${documento.archivo})}"
+                       th:attr="aria-label=|Descargar ${documento.titulo} en PDF|" download>PDF</a>
+                    <a class="doc-boton" th:href="@{/documentos/descargas/{archivo}.docx(archivo=${documento.archivo})}"
+                       th:attr="aria-label=|Descargar ${documento.titulo} en Word|" download>Word</a>
+                </div>
+            </li>
+        </ol>
+    </main>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>
