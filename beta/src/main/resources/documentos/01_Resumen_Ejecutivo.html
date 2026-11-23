@@ -1,0 +1,225 @@
+<div class="doc-layout">
+<nav class="doc-indice" aria-label="Contenido del documento">
+<p class="doc-indice-titulo">Contenido</p>
+<ol><li><a href="#1-descripcion-general">1. Descripción general</a></li><li><a href="#2-solucion-implementada">2. Solución implementada</a></li><li><a href="#3-resumen-consolidado-de-pruebas">3. Resumen consolidado de pruebas</a></li><li><a href="#4-hallazgos-principales">4. Hallazgos principales</a></li><li><a href="#5-conclusion-y-estado-de-entrega">5. Conclusión y estado de entrega</a></li><li><a href="#6-referencias-y-evidencias">6. Referencias y evidencias</a></li></ol>
+</nav>
+<article class="doc-cuerpo">
+<div class="doc-tabla-scroll"><table class="doc-ficha">
+
+<thead>
+<tr>
+<th>Dato</th>
+<th>Información</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">Nombre del proyecto</th>
+<td>Facimus Procesos (Beta): herramienta web multiempresa para modelar procesos BPMN</td>
+</tr>
+<tr>
+<th scope="row">Equipo / integrantes</th>
+<td>Samuel Bonilla (Mundolel), Samuel Giraldo (Segiraldo0610), Juan Guillermo Gómez (GomezJuangl) y Andrés Ospina (andyospina)</td>
+</tr>
+<tr>
+<th scope="row">Curso / grupo</th>
+<td>Desarrollo Web (34807), periodo 2026-30 · Pontificia Universidad Javeriana · docente Pablo Andrés Márquez Fernández · equipo Facimus Curiositatem</td>
+</tr>
+<tr>
+<th scope="row">Fecha y versión</th>
+<td>23/11/2026 · versión 1.0 (release v1.0.0 del 18/11/2026 más los cambios desplegados el 23/11/2026: backend a3f88ab, frontend 7c61265)</td>
+</tr>
+<tr>
+<th scope="row">Enlace a repositorio y demostración</th>
+<td><a href="https://github.com/Facimus-Curiositatem/Beta-back" rel="noopener noreferrer" target="_blank">Beta-back</a> · <a href="https://github.com/Facimus-Curiositatem/Beta-front" rel="noopener noreferrer" target="_blank">Beta-front</a> · demostración: <a href="https://beta-front.taila95c4c.ts.net" rel="noopener noreferrer" target="_blank">https://beta-front.taila95c4c.ts.net</a></td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="1-descripcion-general">1. Descripción general</h2>
+<p><strong>Problema que resuelve la herramienta:</strong> las organizaciones suelen documentar sus procesos en herramientas de escritorio o genéricas, sin separación entre empresas, sin control de quién puede ver o modificar cada proceso y sin verificar que el modelo sea coherente antes de publicarlo. Facimus Procesos ofrece a cada empresa un espacio web propio para modelar sus procesos en BPMN, controlar el acceso por rol, validar el modelo y compartirlo en modo de solo lectura con otras empresas.</p>
+<p><strong>Objetivo principal:</strong> construir un visor y editor web de procesos BPMN simplificado, multiempresa y seguro (autenticación JWT y autorización por rol), desplegado en la infraestructura del curso con integración y despliegue continuos y respaldado por pruebas automatizadas.</p>
+<p><strong>Usuarios previstos y necesidades:</strong></p>
+<ul>
+<li>
+<strong>Administrador de empresa:</strong> registrar la empresa, gestionar usuarios e invitaciones, roles de proceso y permisos de estructura, compartir procesos y eliminar elementos.
+</li>
+<li>
+<strong>Editor:</strong> crear, editar y publicar procesos y modelar sus diagramas.
+</li>
+<li>
+<strong>Lector (solo lectura):</strong> consultar procesos y diagramas sin modificarlos.
+</li>
+<li>
+<strong>Usuario de una empresa invitada:</strong> consultar los procesos que otra empresa le comparte.
+</li>
+</ul>
+<p><strong>Alcance funcional logrado y aspectos excluidos:</strong> se implementaron y desplegaron las 28 historias de usuario: registro y autenticación con access y refresh token, usuarios e invitaciones, procesos con estados, historial y eliminación lógica, procesos compartidos, pools (incluido el de caja negra), lanes con rol, actividades, gateways, eventos de mensaje, arcos, mensajes entre pools, correlación, validación del modelo, roles de proceso y permisos de estructura. Quedan fuera de esta versión la importación y exportación de BPMN 2.0 XML, la ejecución de procesos (motor BPMN), el envío real de mensajes a sistemas externos (solo se registran sus destinos), la recuperación de contraseña y la revocación de tokens en el servidor.</p>
+<h2 id="2-solucion-implementada">2. Solución implementada</h2>
+<p><strong>Funciones clave del modelador BPMN:</strong> editor visual con paleta (seis tipos de actividad, gateways exclusivo, paralelo e inclusivo, y eventos de inicio, espera y envío de mensaje), arrastrar y soltar, panel de propiedades, conexión de arcos con condición, eliminación con análisis de impacto y revisión del modelo en vivo; además, pools y lanes con orden y rol, mensajes entre pools con correlación, publicación con validación, historial de cambios y procesos compartidos en solo lectura.</p>
+<p><strong>Tecnologías principales de Frontend, Backend y persistencia:</strong></p>
+<ul>
+<li>
+<strong>Frontend:</strong> Angular 20.3 con TypeScript 5.9 (componentes standalone, signals, Angular CDK para arrastrar y soltar), servido por nginx 1.27.
+</li>
+<li>
+<strong>Backend:</strong> Java 21 y Spring Boot 4.1 (Web MVC, Security, Data JPA con Hibernate 7.4 y Validation), JJWT 0.12.6, ModelMapper 3.2 y springdoc-openapi 3.0 (Swagger, apagado en producción).
+</li>
+<li>
+<strong>Persistencia:</strong> PostgreSQL 18.6 en producción y pruebas de API; H2 en desarrollo y pruebas de integración.
+</li>
+<li>
+<strong>Operación:</strong> Docker, GitHub Container Registry, GitHub Actions, SonarCloud y Tailscale.
+</li>
+</ul>
+<p><strong>Estado actual de implementación:</strong> versión v1.0.0 publicada el 18/11/2026 y desplegada en producción; el 23/11/2026 se desplegaron el refresh token, el pulido visual, las pruebas E2E dentro del pipeline y la corrección de eventos de mensaje. Todas las pruebas automáticas están en verde en main y el Quality Gate de SonarCloud está aprobado; queda abierto un defecto menor en una colección de pruebas (DF-08).</p>
+<p><strong>Enlace o referencia a arquitectura C4 y despliegue:</strong> documentos 02_Arquitectura_C4 (diagramas de contexto, contenedores, componentes y código) y 03_Despliegue (ambientes, pipeline y operación) de esta entrega.</p>
+<h2 id="3-resumen-consolidado-de-pruebas">3. Resumen consolidado de pruebas</h2>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+
+<thead>
+<tr>
+<th>Tipo de prueba</th>
+<th>Alcance / indicador</th>
+<th>Resultado</th>
+<th>Evidencia</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Carga y rendimiento</td>
+<td>Hasta 50 usuarios concurrentes, 4 escenarios, 3.220 peticiones</td>
+<td>p95 entre 279 y 579 ms (umbral 1.000 ms); 0 % de errores; APDEX 0,932–1,000; CPU hasta 95 % en autenticación</td>
+<td>Documento 04 · ejecución #45106746670 (intento 2)</td>
+</tr>
+<tr>
+<td>Funcionales - Frontend</td>
+<td>15 casos: 14 con Selenium y el editor verificado en el despliegue</td>
+<td>15/15 aprobados</td>
+<td>Documento 05 · tabla 1</td>
+</tr>
+<tr>
+<td>Funcionales - Backend</td>
+<td>Colección de las 28 HU: 69 peticiones y 113 aserciones; catálogo de 53 peticiones</td>
+<td>69/69 y 113/113 aprobadas; DF-08 abierto en el catálogo</td>
+<td>Documento 05 · reporte-postman</td>
+</tr>
+<tr>
+<td>Unitarias</td>
+<td>468 casos JUnit y 233 casos Karma</td>
+<td>701/701 aprobados; cobertura de líneas 94,3 % (back) y 79,1 % (front)</td>
+<td>Documento 06</td>
+</tr>
+<tr>
+<td>SonarQube</td>
+<td>Quality Gate «Sonar way», bugs, vulnerabilidades y code smells</td>
+<td>Passed; 0 bugs, 0 vulnerabilidades y 0 code smells; cobertura 89,3 %; duplicación 0,0 %</td>
+<td>Documento 06 · SonarCloud</td>
+</tr>
+<tr>
+<td>Automatizadas</td>
+<td>23 casos E2E (Selenium) y 6 ejecuciones registradas</td>
+<td>23/23 en main; 2 fallos el 23/11 que bloquearon el despliegue y se corrigieron</td>
+<td>Documento 07</td>
+</tr>
+<tr>
+<td>Seguridad y permisos</td>
+<td>3 roles de acceso, 31 combinaciones rol-endpoint, 47 casos de aislamiento entre empresas</td>
+<td>Todo aprobado: 401 sin sesión, 403 sin permiso y 404 ante recursos de otra empresa</td>
+<td>Documento 08</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="4-hallazgos-principales">4. Hallazgos principales</h2>
+<p><strong>Fortalezas comprobadas por las pruebas:</strong></p>
+<ul>
+<li>
+Cero incidencias abiertas en SonarCloud (calificación A en confiabilidad, seguridad y mantenibilidad) y 89,3 % de cobertura.
+</li>
+<li>
+Aislamiento entre empresas (47 casos) y permisos por rol (31 combinaciones) verificados en cada cambio.
+</li>
+<li>
+Rendimiento dentro de los umbrales con 50 usuarios simultáneos (p95 ≤ 579 ms, 0 % de errores).
+</li>
+<li>
+Pipeline con compuertas efectivas: el 23/11/2026 la suite E2E bloqueó un despliegue con textos de login desactualizados.
+</li>
+</ul>
+<p><strong>Defectos y riesgos relevantes encontrados:</strong></p>
+<ul>
+<li>
+La autenticación lleva la CPU de la VM cerca del 100 % con 50 usuarios (BCrypt); más carga requiere escalar.
+</li>
+<li>
+Los tokens se guardan en localStorage y el cierre de sesión no los revoca en el servidor.
+</li>
+<li>
+nginx no envía encabezados de seguridad (HSTS, CSP, X-Frame-Options).
+</li>
+<li>
+La colección Facimus-Procesos-API tiene peticiones sin aserciones (DF-08) y el frontend no está en SonarCloud.
+</li>
+</ul>
+<p><strong>Correcciones realizadas y pendientes:</strong> se corrigieron siete defectos (DF-01 a DF-07): login sensible a mayúsculas, modelado en procesos inactivos, nombres reservados por nodos eliminados, correo único y Swagger en producción, enlace de invitación, nombres de eventos Catch/Throw y textos de las pruebas E2E. Pendientes: DF-08, encabezados de seguridad, revocación de refresh tokens, análisis del frontend en SonarCloud y casos E2E para mensajes, correlación y procesos compartidos.</p>
+<p><strong>Limitaciones del alcance de las pruebas:</strong> las pruebas de carga son cortas (10–15 s por escenario, hasta 50 usuarios) y no incluyen resistencia; la suite E2E solo corre en Chrome; no hubo auditoría de accesibilidad ni pruebas de penetración; las pruebas de integración usan H2; y los destinos externos de mensajes no se ejercitan.</p>
+<h2 id="5-conclusion-y-estado-de-entrega">5. Conclusión y estado de entrega</h2>
+<p><strong>Nivel de cumplimiento de objetivos del proyecto:</strong> alto. Las 28 historias están implementadas y desplegadas, y se cumplen los requisitos de autenticación con dos tokens, autorización por rol, pruebas (unitarias, de integración, E2E y de carga), análisis estático y despliegue continuo.</p>
+<p><strong>Valoración global de calidad, seguridad y desempeño:</strong> calidad alta (SonarCloud sin incidencias abiertas y 701 pruebas automáticas de back y front en verde); seguridad sólida en autenticación, autorización y aislamiento, con mejoras pendientes de endurecimiento; desempeño adecuado para la carga objetivo, con la CPU como primer límite.</p>
+<p><strong>Criterios que respaldan la aptitud para demostración o entrega:</strong> pipelines en verde en main (back y front), despliegue verificado por la URL pública (healthz 200 y API 401 sin token), suite E2E 23/23 sobre la imagen desplegada, Quality Gate aprobado y release v1.0.0 publicada.</p>
+<p><strong>Próximos pasos o mejoras prioritarias:</strong></p>
+<ul>
+<li>
+Corregir DF-08 y agregar casos E2E para mensajes, correlación y procesos compartidos.
+</li>
+<li>
+Agregar encabezados de seguridad en nginx y revocación o rotación de refresh tokens.
+</li>
+<li>
+Incluir el frontend en SonarCloud y subir la cobertura de ramas.
+</li>
+<li>
+Escalar CPU o réplicas del backend antes de superar los 50 usuarios simultáneos.
+</li>
+</ul>
+<h2 id="6-referencias-y-evidencias">6. Referencias y evidencias</h2>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+
+<thead>
+<tr>
+<th>Documento / recurso</th>
+<th>Ubicación o enlace</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Arquitectura C4</td>
+<td>02_Arquitectura_C4.docx (esta entrega)</td>
+</tr>
+<tr>
+<td>Despliegue</td>
+<td>03_Despliegue.docx (esta entrega) · https://beta-front.taila95c4c.ts.net</td>
+</tr>
+<tr>
+<td>Pruebas de carga</td>
+<td>04_Pruebas_Carga.docx (esta entrega) · https://github.com/Facimus-Curiositatem/Beta-back/actions/runs/45106746670/attempts/2</td>
+</tr>
+<tr>
+<td>Pruebas funcionales</td>
+<td>05_Pruebas_Funcionales.docx (esta entrega)</td>
+</tr>
+<tr>
+<td>Pruebas unitarias y SonarQube</td>
+<td>06_Unitarias_SonarQube.docx (esta entrega) · https://sonarcloud.io/summary/overall?id=Facimus-Curiositatem_Beta-back&amp;branch=main</td>
+</tr>
+<tr>
+<td>Pruebas automatizadas</td>
+<td>07_Pruebas_Automatizadas.docx (esta entrega) · https://github.com/Facimus-Curiositatem/Beta-front/actions/runs/45108415804</td>
+</tr>
+<tr>
+<td>Roles y seguridad</td>
+<td>08_Roles_y_Seguridad.docx (esta entrega)</td>
+</tr>
+</tbody>
+</table></div>
+</article>
+</div>
