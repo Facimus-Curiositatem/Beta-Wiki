@@ -1,0 +1,270 @@
+<div class="doc-layout">
+<nav class="doc-indice" aria-label="Contenido del documento">
+<p class="doc-indice-titulo">Contenido</p>
+<ol><li><a href="#ficha-del-documento">Ficha del documento</a></li><li><a href="#1-vista-general">1. Vista general</a></li><li><a href="#2-nivel-1-contexto">2. Nivel 1 - Contexto</a></li><li><a href="#3-nivel-2-contenedores">3. Nivel 2 - Contenedores</a></li><li><a href="#4-nivel-3-componentes">4. Nivel 3 - Componentes</a></li><li><a href="#5-nivel-4-codigo-opcional">5. Nivel 4 - Código (opcional)</a></li><li><a href="#6-decisiones-y-atributos-de-calidad">6. Decisiones y atributos de calidad</a></li><li><a href="#anexos-y-referencias">Anexos y referencias</a></li></ol>
+</nav>
+<article class="doc-cuerpo">
+<h2 id="ficha-del-documento">Ficha del documento</h2>
+<div class="doc-tabla-scroll"><table class="doc-ficha">
+
+
+<tbody><tr>
+<th scope="row">Institución / asignatura</th>
+<td>Pontificia Universidad Javeriana · Desarrollo Web (34807), periodo 2026-30</td>
+</tr>
+<tr>
+<th scope="row">Nombre del proyecto</th>
+<td>Facimus Procesos (Beta): herramienta web multiempresa para modelar procesos BPMN</td>
+</tr>
+<tr>
+<th scope="row">Equipo / integrantes</th>
+<td>Samuel Bonilla (Mundolel), Samuel Giraldo (Segiraldo0610), Juan Guillermo Gómez (GomezJuangl) y Andrés Ospina (andyospina)</td>
+</tr>
+<tr>
+<th scope="row">Docente</th>
+<td>Pablo Andrés Márquez Fernández</td>
+</tr>
+<tr>
+<th scope="row">Versión / fecha</th>
+<td>1.0 · 23/11/2026 · evidencias de CI del 23/11/2026 (backend main a3f88ab, frontend main 7c61265)</td>
+</tr>
+<tr>
+<th scope="row">Enlace al repositorio</th>
+<td><a href="https://github.com/Facimus-Curiositatem/Beta-back" rel="noopener noreferrer" target="_blank">Beta-back</a> (API REST) · <a href="https://github.com/Facimus-Curiositatem/Beta-front" rel="noopener noreferrer" target="_blank">Beta-front</a> (Angular) · <a href="https://github.com/Facimus-Curiositatem/Beta-Wiki" rel="noopener noreferrer" target="_blank">Beta-Wiki</a> (documentación)</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="1-vista-general">1. Vista general</h2>
+<p><strong>Objetivo del documento:</strong> describir la arquitectura de Facimus Procesos (Beta) en los cuatro niveles del modelo C4 (contexto, contenedores, componentes y código) y justificar las decisiones que la sostienen.</p>
+<p><strong>Principales decisiones arquitectónicas:</strong></p>
+<ul>
+<li>
+Aplicación de una sola página (Angular) y API REST sin estado con JWT.
+</li>
+<li>
+Monolito modular en Spring Boot, organizado por dominio: gestion, modelado, security y common.
+</li>
+<li>
+Multiempresa con una sola base de datos y la columna empresa_id en cada entidad (EntidadEmpresa y RepositorioTenant).
+</li>
+<li>
+Eliminación lógica explícita, un repositorio por servicio y orquestadores para las operaciones transaccionales.
+</li>
+<li>
+Contenedores Docker en VMs, con nginx como proxy del mismo origen y despliegue continuo.
+</li>
+</ul>
+<p><strong>Tecnologías y versiones utilizadas:</strong> Angular 20.3, TypeScript 5.9, nginx 1.27; Java 21, Spring Boot 4.1 (Spring Security, Spring Data JPA, Hibernate 7.4, Bean Validation), JJWT 0.12.6, ModelMapper 3.2, springdoc-openapi 3.0; PostgreSQL 18.6 (H2 2.4 en desarrollo); Docker 29.10, GHCR, GitHub Actions, SonarCloud y Tailscale.</p>
+<h2 id="2-nivel-1-contexto">2. Nivel 1 - Contexto</h2>
+<p><strong>Actores externos:</strong> administrador de empresa, editor, lector (solo lectura) y usuarios de empresas invitadas a procesos compartidos; también el visitante sin sesión, que solo puede registrar una empresa o aceptar una invitación.</p>
+<p><strong>Sistemas externos:</strong> sistemas de la empresa que recibirían los mensajes del proceso (servicio web o correo): el modelo registra su destino, pero esta versión no los invoca. Tailscale Funnel publica la aplicación por HTTPS. GitHub, GHCR y SonarCloud solo intervienen en la construcción y el despliegue.</p>
+<p><strong>Descripción de interacciones:</strong> todos los usuarios usan la aplicación desde el navegador por HTTPS. El administrador registra la empresa y gestiona usuarios, roles, permisos y procesos compartidos; el editor modela y publica; el lector y los usuarios invitados consultan. Cada petición viaja con un JWT y el sistema solo devuelve datos de la empresa del usuario o de procesos compartidos con ella.</p>
+<p><strong>Insertar diagrama de contexto C4:</strong> figura 1.</p>
+<figure>
+<img alt="Figura 1. Nivel 1, contexto: actores y sistemas externos de Facimus Procesos." height="791" loading="lazy" src="img/02_Arquitectura_C4/figura-1.png" width="1800"/>
+<figcaption>
+Figura 1. Nivel 1, contexto: actores y sistemas externos de Facimus Procesos.
+</figcaption>
+</figure>
+<h2 id="3-nivel-2-contenedores">3. Nivel 2 - Contenedores</h2>
+<p><strong>Aplicación frontend:</strong> SPA en Angular 20 con componentes standalone y rutas diferidas; authGuard y rolGuard protegen las rutas; los interceptores agregan el JWT y renuevan la sesión ante un 401. Se compila a archivos estáticos que sirve nginx 1.27 en el contenedor beta-front (128 MB, con /healthz); nginx reenvía /api al backend, de modo que el navegador habla con un solo origen.</p>
+<p><strong>Servicios / backend:</strong> API REST en Spring Boot 4.1 sobre Java 21 y Tomcat 11, en el contenedor beta-back (perfil prod, 1 GB). Expone /api/v1 con 16 controladores, sin estado (JWT) y con errores en formato ProblemDetail. La documentación OpenAPI existe en desarrollo y está apagada en producción.</p>
+<p><strong>Persistencia y almacenamiento:</strong> PostgreSQL 18.6 en una VM dedicada (base proyecto_desarrollo). Hibernate 7.4 valida el esquema al arrancar (ddl-auto=validate); cada tabla lleva empresa_id y las entidades eliminables, la columna activo. En desarrollo y en las pruebas de integración se usa H2.</p>
+<p><strong>Integraciones:</strong> Tailscale Funnel (HTTPS público hacia beta-front), GHCR (imágenes), GitHub Actions (CI/CD por Tailscale y SSH) y SonarCloud (análisis estático). Los destinos externos de los mensajes solo se registran.</p>
+<p><strong>Insertar diagrama de contenedores C4:</strong> figura 2.</p>
+<figure>
+<img alt="Figura 2. Nivel 2, contenedores: SPA, servidor web, API REST y base de datos." height="1639" loading="lazy" src="img/02_Arquitectura_C4/figura-2.png" width="1800"/>
+<figcaption>
+Figura 2. Nivel 2, contenedores: SPA, servidor web, API REST y base de datos.
+</figcaption>
+</figure>
+<h2 id="4-nivel-3-componentes">4. Nivel 3 - Componentes</h2>
+<p><strong>Contenedor seleccionado:</strong> API REST (backend Spring Boot).</p>
+<p><strong>Componentes internos y responsabilidades:</strong></p>
+<ul>
+<li>
+<strong>Seguridad:</strong> JwtAuthenticationFilter valida el token, recarga el usuario y arma el principal (usuario, empresa y rol); SecurityConfig define las reglas por ruta y rol, CORS y la política sin sesión.
+</li>
+<li>
+<strong>Controladores de gestión y de modelado:</strong> contrato REST, validación de entrada (@Valid) y mapeo a DTO.
+</li>
+<li>
+<strong>Servicios y orquestadores:</strong> reglas de negocio por entidad; EmpresaOrquestador, ProcesoOrquestador, PoolOrquestador y CorrelacionOrquestador coordinan operaciones transaccionales; ValidacionModeloService revisa el modelo antes de publicar.
+</li>
+<li>
+<strong>Repositorios:</strong> Spring Data JPA sobre RepositorioTenant, con consultas filtradas por empresaId y activo.
+</li>
+<li>
+<strong>Transversales:</strong> ModelMapperConfig (entidad a DTO), ApiExceptionHandler (ProblemDetail) y eventos de dominio (publicación del proceso y pool de caja negra).
+</li>
+</ul>
+<p><strong>Relaciones y dependencias:</strong> cada petición recorre filtro → controlador → servicio u orquestador → repositorio → PostgreSQL. Los servicios de modelado consultan a los de gestión para comprobar que el proceso esté activo y que el rol tenga el permiso de estructura. Cada servicio inyecta solo su propio repositorio, regla que verifica ArchUnit (SeparacionRepositoriosTest, 15 casos).</p>
+<p><strong>Insertar diagrama de componentes C4:</strong> figura 3.</p>
+<figure>
+<img alt="Figura 3. Nivel 3, componentes de la API REST." height="2036" loading="lazy" src="img/02_Arquitectura_C4/figura-3.png" width="1800"/>
+<figcaption>
+Figura 3. Nivel 3, componentes de la API REST.
+</figcaption>
+</figure>
+<h2 id="5-nivel-4-codigo-opcional">5. Nivel 4 - Código (opcional)</h2>
+<p><strong>Módulo o componente seleccionado:</strong> modelo de dominio del modelado BPMN (paquetes modelado.model y gestion.model).</p>
+<p><strong>Diagrama o estructura de clases / módulos:</strong> todas las entidades extienden EntidadEmpresa (@MappedSuperclass con empresa_id obligatorio e inmutable). Actividad, Gateway y EventoMensaje heredan de NodoFlujo en una sola tabla (SINGLE_TABLE, discriminador tipo_nodo), de modo que un Arco apunta a cualquier nodo con dos claves foráneas. Proceso contiene pools, cada pool lanes con un RolProceso, y cada lane nodos; Mensaje une dos pools y sus eventos THROW y CATCH, y Correlacion define el criterio del mensaje (figura 4).</p>
+<figure>
+<img alt="Figura 4. Nivel 4, código: modelo de clases del dominio BPMN." height="1426" loading="lazy" src="img/02_Arquitectura_C4/figura-4.png" width="1800"/>
+<figcaption>
+Figura 4. Nivel 4, código: modelo de clases del dominio BPMN.
+</figcaption>
+</figure>
+<h2 id="6-decisiones-y-atributos-de-calidad">6. Decisiones y atributos de calidad</h2>
+<p><strong>Seguridad y control de acceso:</strong> JWT HS256 con access token de 15 min y refresh token de 7 días; reglas por ruta y rol (ADMINISTRADOR, EDITOR, SOLO_LECTURA); permisos de estructura configurables; aislamiento por empresa en cada consulta; contraseñas con BCrypt; secretos por variables de entorno; Swagger apagado en producción. Detalle en el documento 08.</p>
+<p><strong>Escalabilidad y rendimiento:</strong> la API no guarda estado, así que admite varias réplicas detrás de nginx. Con 50 usuarios el p95 queda por debajo de 579 ms; la autenticación con BCrypt es el primer límite de CPU. open-in-view está desactivado y los @EntityGraph cargan las relaciones necesarias en una sola consulta.</p>
+<p><strong>Mantenibilidad:</strong> paquetes por dominio, un repositorio por servicio, 35 reglas de arquitectura con ArchUnit, DTO inmutables (records) con ModelMapper, errores uniformes y SonarCloud con calificación A, deuda técnica de 0 min y 89,3 % de cobertura.</p>
+<p><strong>Justificación de decisiones y compromisos:</strong> se eligió simplicidad operativa (un solo despliegue, una sola base y sin estado) acorde con el tamaño del equipo y el plazo. Los compromisos aceptados son: sin revocación de tokens en el servidor, aislamiento por disciplina de consulta en vez de esquemas separados (mitigado con RepositorioTenant y 47 pruebas) y columnas nulas por la herencia en una sola tabla.</p>
+<h3 id="inventario-de-contenedores">Inventario de contenedores</h3>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+<caption>
+Tabla 1. Contenedores del sistema.
+</caption>
+
+<thead>
+<tr>
+<th><strong>Contenedor</strong></th>
+<th><strong>Responsabilidad</strong></th>
+<th><strong>Tecnología</strong></th>
+<th><strong>Comunicación</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aplicación web (SPA)</td>
+<td>Interfaz del visor y editor BPMN</td>
+<td>Angular 20.3, TypeScript 5.9</td>
+<td>HTTPS; REST /api/v1 con JWT</td>
+</tr>
+<tr>
+<td>Servidor web (beta-front)</td>
+<td>Sirve la SPA y hace de proxy de /api</td>
+<td>nginx 1.27-alpine en Docker (128 MB)</td>
+<td>HTTPS por Tailscale Funnel; HTTP :8080 al backend</td>
+</tr>
+<tr>
+<td>API REST (beta-back)</td>
+<td>Seguridad, reglas de negocio y modelado</td>
+<td>Spring Boot 4.1, Java 21, Docker (1 GB)</td>
+<td>HTTP :8080 (JSON); JDBC a PostgreSQL</td>
+</tr>
+<tr>
+<td>Base de datos</td>
+<td>Empresas, usuarios, procesos, modelos e historial</td>
+<td>PostgreSQL 18.6 en VM dedicada</td>
+<td>TCP :5432 solo desde la red de la universidad</td>
+</tr>
+<tr>
+<td>Pipeline CI/CD</td>
+<td>Construir, probar, analizar y desplegar</td>
+<td>GitHub Actions, GHCR, SonarCloud</td>
+<td>Tailscale y SSH hacia las VMs</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="decisiones-arquitectonicas">Decisiones arquitectónicas</h3>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+<caption>
+Tabla 2. Decisiones arquitectónicas.
+</caption>
+
+<thead>
+<tr>
+<th><strong>ID</strong></th>
+<th><strong>Decisión</strong></th>
+<th><strong>Alternativa</strong></th>
+<th><strong>Justificación</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="doc-id">DA-01</td>
+<td>SPA en Angular + API REST</td>
+<td>Aplicación renderizada en el servidor (Thymeleaf)</td>
+<td>Permite el editor interactivo y pruebas separadas de front y back.</td>
+</tr>
+<tr>
+<td class="doc-id">DA-02</td>
+<td>Monolito modular en Spring Boot</td>
+<td>Microservicios</td>
+<td>Un solo despliegue y transacciones locales, acorde con el equipo y el plazo.</td>
+</tr>
+<tr>
+<td class="doc-id">DA-03</td>
+<td>Multiempresa por empresa_id</td>
+<td>Un esquema o una base por empresa</td>
+<td>Una sola base; el aislamiento se fuerza en cada consulta y se prueba con 47 casos.</td>
+</tr>
+<tr>
+<td class="doc-id">DA-04</td>
+<td>JWT sin estado (access 15 min y refresh 7 días)</td>
+<td>Sesión HTTP con cookie</td>
+<td>Escala sin estado y sin riesgo de CSRF; no permite revocar tokens en el servidor.</td>
+</tr>
+<tr>
+<td class="doc-id">DA-05</td>
+<td>Eliminación lógica con filtros explícitos</td>
+<td>@SQLDelete y @SQLRestriction</td>
+<td>Filtros visibles y auditables, sin efectos ocultos sobre el filtro de empresa.</td>
+</tr>
+<tr>
+<td class="doc-id">DA-06</td>
+<td>Herencia SINGLE_TABLE en NodoFlujo</td>
+<td>JOINED o tabla por clase</td>
+<td>Arcos con una sola clave hacia nodos_flujo y consultas simples; deja columnas nulas.</td>
+</tr>
+<tr>
+<td class="doc-id">DA-07</td>
+<td>Un repositorio por servicio y orquestadores</td>
+<td>Servicios con varios repositorios</td>
+<td>Responsabilidades claras y transacciones en un solo lugar; lo verifica ArchUnit.</td>
+</tr>
+<tr>
+<td class="doc-id">DA-08</td>
+<td>nginx como proxy del mismo origen</td>
+<td>CORS abierto en el backend</td>
+<td>El backend no queda expuesto a Internet y el navegador usa un solo origen.</td>
+</tr>
+<tr>
+<td class="doc-id">DA-09</td>
+<td>Docker y despliegue continuo a VMs</td>
+<td>Despliegue manual con mvnw y ng serve</td>
+<td>Despliegues repetibles, con aprobación y verificación automáticas.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="anexos-y-referencias">Anexos y referencias</h2>
+<p><strong>Repositorio / documentación:</strong></p>
+<ul>
+<li>
+Backend: <a href="https://github.com/Facimus-Curiositatem/Beta-back" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-back</a> (código, pruebas en src/test, colecciones en postman/, planes en jmeter/, workflow en .github/workflows/ci.yml).
+</li>
+<li>
+Frontend: <a href="https://github.com/Facimus-Curiositatem/Beta-front" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-front</a> (Angular, pruebas unitarias *.spec.ts, suite E2E en e2e/).
+</li>
+<li>
+Documentación: <a href="https://github.com/Facimus-Curiositatem/Beta-Wiki" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-Wiki</a>.
+</li>
+<li>
+Aplicación desplegada: <a href="https://beta-front.taila95c4c.ts.net" rel="noopener noreferrer" target="_blank">https://beta-front.taila95c4c.ts.net</a>.
+</li>
+</ul>
+<p><strong>Capturas, diagramas, reportes, logs u otras evidencias:</strong></p>
+<ul>
+<li>
+Configuración de seguridad: <a href="https://github.com/Facimus-Curiositatem/Beta-back/blob/main/src/main/java/com/facimus/procesos/security/SecurityConfig.java" rel="noopener noreferrer" target="_blank">SecurityConfig.java</a>.
+</li>
+<li>
+Reglas de arquitectura (ArchUnit): <a href="https://github.com/Facimus-Curiositatem/Beta-back/tree/main/src/test/java/com/facimus/procesos/arquitectura" rel="noopener noreferrer" target="_blank">carpeta arquitectura</a>.
+</li>
+<li>
+Diagramas de las figuras 1 a 4, generados con Mermaid a partir del código del repositorio.
+</li>
+</ul>
+</article>
+</div>
