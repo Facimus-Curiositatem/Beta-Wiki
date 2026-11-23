@@ -1,0 +1,290 @@
+<div class="doc-layout">
+<nav class="doc-indice" aria-label="Contenido del documento">
+<p class="doc-indice-titulo">Contenido</p>
+<ol><li><a href="#ficha-del-documento">Ficha del documento</a></li><li><a href="#1-alcance-y-prerrequisitos">1. Alcance y prerrequisitos</a></li><li><a href="#2-configuracion">2. Configuración</a></li><li><a href="#3-procedimiento-de-despliegue">3. Procedimiento de despliegue</a></li><li><a href="#4-operacion-y-recuperacion">4. Operación y recuperación</a></li><li><a href="#5-evidencias">5. Evidencias</a></li><li><a href="#anexos-y-referencias">Anexos y referencias</a></li></ol>
+</nav>
+<article class="doc-cuerpo">
+<h2 id="ficha-del-documento">Ficha del documento</h2>
+<div class="doc-tabla-scroll"><table class="doc-ficha">
+
+
+<tbody><tr>
+<th scope="row">Institución / asignatura</th>
+<td>Pontificia Universidad Javeriana · Desarrollo Web (34807), periodo 2026-30</td>
+</tr>
+<tr>
+<th scope="row">Nombre del proyecto</th>
+<td>Facimus Procesos (Beta): herramienta web multiempresa para modelar procesos BPMN</td>
+</tr>
+<tr>
+<th scope="row">Equipo / integrantes</th>
+<td>Samuel Bonilla (Mundolel), Samuel Giraldo (Segiraldo0610), Juan Guillermo Gómez (GomezJuangl) y Andrés Ospina (andyospina)</td>
+</tr>
+<tr>
+<th scope="row">Docente</th>
+<td>Pablo Andrés Márquez Fernández</td>
+</tr>
+<tr>
+<th scope="row">Versión / fecha</th>
+<td>1.0 · 23/11/2026 · evidencias de CI del 23/11/2026 (backend main a3f88ab, frontend main 7c61265)</td>
+</tr>
+<tr>
+<th scope="row">Enlace al repositorio</th>
+<td><a href="https://github.com/Facimus-Curiositatem/Beta-back" rel="noopener noreferrer" target="_blank">Beta-back</a> (API REST) · <a href="https://github.com/Facimus-Curiositatem/Beta-front" rel="noopener noreferrer" target="_blank">Beta-front</a> (Angular) · <a href="https://github.com/Facimus-Curiositatem/Beta-Wiki" rel="noopener noreferrer" target="_blank">Beta-Wiki</a> (documentación)</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="1-alcance-y-prerrequisitos">1. Alcance y prerrequisitos</h2>
+<p><strong>Ambientes disponibles (local, pruebas, producción):</strong></p>
+<ul>
+<li>
+<strong>Local:</strong> backend con ./mvnw spring-boot:run (H2 y datos de demostración) y frontend con ng serve.
+</li>
+<li>
+<strong>Pruebas (CI):</strong> en cada pull request se levanta en beta-back un backend temporal con la imagen del PR contra las bases proyecto_ci (API y carga) o proyecto_ci_front (E2E), que se vacían antes y después.
+</li>
+<li>
+<strong>Producción:</strong> beta-front (nginx) y beta-back (API) con PostgreSQL proyecto_desarrollo, publicado en <a href="https://beta-front.taila95c4c.ts.net" rel="noopener noreferrer" target="_blank">https://beta-front.taila95c4c.ts.net</a>.
+</li>
+</ul>
+<p><strong>Infraestructura requerida:</strong> tres VMs VMware con Ubuntu 22.04.5 LTS en la red de la universidad: beta-front y beta-back (4 vCPU Intel Xeon Gold 6240R a 2,40 GHz, 11,6 GiB de RAM y 68 GB de disco cada una) y la VM de base de datos con PostgreSQL 18.6. Las VMs de aplicación tienen Docker 29.10 con Compose y están unidas a una red Tailscale; el código y las imágenes viven en GitHub y GHCR.</p>
+<figure>
+<img alt="Figura 1. Topología de despliegue y pipeline de CI/CD." height="1980" loading="lazy" src="img/03_Despliegue/figura-1.png" width="1800"/>
+<figcaption>
+Figura 1. Topología de despliegue y pipeline de CI/CD.
+</figcaption>
+</figure>
+<p><strong>Dependencias y versiones:</strong> imagen del backend: compilación con maven:3.9-eclipse-temurin-21 y ejecución con eclipse-temurin:21-jre (Spring Boot 4.1.0); imagen del frontend: compilación con node:22-alpine y ejecución con nginx:1.27-alpine; PostgreSQL 18.6; Docker 29.10; Tailscale.</p>
+<p><strong>Accesos y permisos requeridos:</strong> pertenencia a la red Tailscale (el CI usa un cliente OAuth con la etiqueta tag:ci), usuario deploy con llave SSH autorizada en las VMs, permiso packages:write para publicar en GHCR, entorno «production» de GitHub con revisores obligatorios (aprobación manual de cada despliegue) y acceso al archivo /opt/beta/.env de cada VM.</p>
+<h2 id="2-configuracion">2. Configuración</h2>
+<p><strong>Variables de entorno (sin divulgar secretos):</strong></p>
+<ul>
+<li>
+<strong>Backend (/opt/beta/.env en beta-back):</strong> BACKEND_TAG, DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, JWT_SECRET, CORS_ALLOWED_ORIGINS y DDL_AUTO. Opcionales: JWT_EXPIRATION_MINUTES (15) y JWT_REFRESH_DAYS (7).
+</li>
+<li>
+<strong>Fijas en compose.yml:</strong> SPRING_PROFILES_ACTIVE=prod y JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=70.
+</li>
+<li>
+<strong>Frontend (/opt/beta/.env en beta-front):</strong> FRONT_TAG, BACKEND_URL y HTTP_BIND.
+</li>
+</ul>
+<p><strong>Configuración de base de datos:</strong> PostgreSQL 18.6 en su propia VM: base proyecto_desarrollo para producción y bases proyecto_ci y proyecto_ci_front para las pruebas del CI. El perfil prod usa ddl-auto=validate (Hibernate solo verifica que el esquema coincida con las entidades) y open-in-view=false.</p>
+<p><strong>Configuración de frontend y backend:</strong></p>
+<ul>
+<li>
+<strong>Backend:</strong> perfil prod (application-prod.properties) con PostgreSQL, consola H2 y Swagger apagados, límite de 1 GB y heap del 70 %; healthcheck TCP en el puerto 8080, publicado solo en la red de la universidad.
+</li>
+<li>
+<strong>Frontend:</strong> plantilla nginx (default.conf.template) en la que ${BACKEND_URL} se reemplaza al arrancar; escucha en 8080, expone /healthz, reenvía /api/ al backend, cachea los recursos estáticos y devuelve index.html para las rutas de Angular; la SPA llama a /api/v1 en el mismo origen.
+</li>
+</ul>
+<p><strong>Manejo de secretos:</strong> los secretos del CI (DB_PASSWORD, DEPLOY_SSH_KEY, TS_OAUTH_CLIENT_ID, TS_OAUTH_SECRET, SONAR_TOKEN y los known_hosts) se guardan como GitHub Secrets. En las VMs viven en /opt/beta/.env con permisos 600 y nunca se suben al repositorio (solo .env.example). JWT_SECRET se genera con openssl rand -hex 32. Las credenciales temporales del CI se escriben con umask 077 y se borran al terminar, y la sesión de GHCR se cierra después de cada despliegue.</p>
+<h2 id="3-procedimiento-de-despliegue">3. Procedimiento de despliegue</h2>
+<p><strong>Preparación del entorno:</strong> una sola vez por VM: instalar Docker con el plugin de Compose y Tailscale, crear /opt/beta, copiar .env.example a .env y completarlo (chmod 600), autorizar la llave del usuario deploy y dejar libre el puerto 8080. En beta-front, publicar nginx por HTTPS con Tailscale Funnel.</p>
+<p><strong>Construcción / empaquetado:</strong> Dockerfiles multi-etapa: el backend se compila con Maven y corre como usuario no root (appuser); el frontend se compila con Node 22 y lo sirve nginx con HEALTHCHECK. En cada merge a main el CI publica las etiquetas :sha-xxxxxxx y :latest (en los PR, :pr-N). Al subir un tag vX.Y.Z, el workflow de release reetiqueta como :X.Y.Z la misma imagen ya probada, sin reconstruirla, y crea la release con el JAR.</p>
+<p><strong>Ejecución de migraciones:</strong> no se usa Flyway ni Liquibase. El esquema se crea arrancando el backend con DDL_AUTO=create sobre una base vacía y en operación normal se usa validate. Los cambios de tipo de columna se aplicaron con los scripts sql/V1__migrar_descripcion_oid_a_text.sql y sql/V2__migrar_contenido_mensaje_oid_a_text.sql (OID → TEXT), ejecutados con psql antes de reiniciar la aplicación. En el CI, cada corrida usa ddl-auto=create sobre una base vaciada.</p>
+<p><strong>Despliegue de componentes:</strong> el job «Desplegar» (después de la imagen y de SonarCloud en el back, o de las pruebas E2E en el front) espera la aprobación en el entorno production, se conecta por Tailscale y SSH, verifica /opt/beta/.env y que el puerto 8080 esté libre, copia deploy/compose.yml, fija BACKEND_TAG o FRONT_TAG en la etiqueta :sha-xxxxxxx del commit y ejecuta docker compose pull &amp;&amp; docker compose up -d --wait. Al final cierra la sesión de GHCR y limpia las imágenes sin uso (docker image prune -f).</p>
+<p><strong>Verificación posterior al despliegue:</strong> el workflow comprueba la URL pública: en el back, que /api/v1/procesos responda 401 o 403; en el front, que /healthz responda 200 y /api/v1/procesos 401 o 403 (recorrido completo Funnel → nginx → API). Además, Compose espera a que los healthchecks de los contenedores estén sanos (--wait).</p>
+<h2 id="4-operacion-y-recuperacion">4. Operación y recuperación</h2>
+<p><strong>Comandos de inicio, parada y reinicio:</strong> en /opt/beta de cada VM: docker compose up -d --wait, docker compose stop, docker compose restart, docker compose ps y docker compose logs -f --tail 100 backend (o front). Para actualizar: docker compose pull &amp;&amp; docker compose up -d --wait.</p>
+<p><strong>Registros y monitoreo:</strong> Spring Boot y nginx escriben en la salida estándar del contenedor (docker compose logs); los healthchecks aparecen en docker compose ps; la política restart: unless-stopped reinicia los contenedores; los resúmenes del CI quedan en cada ejecución de GitHub Actions. No hay monitoreo centralizado (pendiente).</p>
+<p><strong>Estrategia de reversión (rollback):</strong> las imágenes son inmutables por commit (:sha-xxxxxxx) y por versión (:X.Y.Z). Para volver atrás se fija en /opt/beta/.env la etiqueta anterior (BACKEND_TAG o FRONT_TAG) y se ejecuta docker compose pull &amp;&amp; docker compose up -d --wait, o se re-ejecuta el job de despliegue de la ejecución anterior de main. Con ddl-auto=validate, el backend no arranca si el esquema no coincide.</p>
+<p><strong>Respaldo y recuperación:</strong> no hay respaldo automático de la base (pendiente). Procedimiento propuesto: pg_dump -Fc proyecto_desarrollo diario en la VM de base de datos y restauración con pg_restore. La eliminación lógica y el historial de cambios permiten recuperar datos borrados desde la aplicación.</p>
+<p><strong>Problemas conocidos:</strong></p>
+<ul>
+<li>
+Si otro proceso ocupa el puerto 8080 (por ejemplo, un backend viejo levantado con mvnw), el despliegue se detiene con un mensaje.
+</li>
+<li>
+Si falta /opt/beta/.env o el secreto DB_PASSWORD está vacío, el job falla y explica qué crear.
+</li>
+<li>
+Cambiar JWT_SECRET invalida todas las sesiones abiertas.
+</li>
+<li>
+Si la suite E2E falla, el front no se despliega (comportamiento esperado, como el 23/11/2026).
+</li>
+</ul>
+<h2 id="5-evidencias">5. Evidencias</h2>
+<p><strong>URL de acceso (si aplica):</strong> <a href="https://beta-front.taila95c4c.ts.net" rel="noopener noreferrer" target="_blank">https://beta-front.taila95c4c.ts.net</a> (la API se publica en el mismo origen, en /api/v1; el backend no está expuesto a Internet).</p>
+<p><strong>Capturas de ejecución:</strong> figuras 2 a 5: ejecuciones de CI/CD con despliegue, release v1.0.0 y la aplicación en producción.</p>
+<figure>
+<img alt="Figura 2. Ejecución #45108415804 del front: Karma, imagen, E2E y despliegue en verde (5 min 40 s)." height="445" loading="lazy" src="img/03_Despliegue/figura-2.png" width="1482"/>
+<figcaption>
+Figura 2. Ejecución <a href="https://github.com/Facimus-Curiositatem/Beta-front/actions/runs/45108415804" rel="noopener noreferrer" target="_blank">#45108415804</a> del front: Karma, imagen, E2E y despliegue en verde (5 min 40 s).
+</figcaption>
+</figure>
+<figure>
+<img alt="Figura 3. Ejecución #45109076116 del back: build, arquitectura, SonarCloud, imagen y despliegue." height="445" loading="lazy" src="img/03_Despliegue/figura-3.png" width="1482"/>
+<figcaption>
+Figura 3. Ejecución <a href="https://github.com/Facimus-Curiositatem/Beta-back/actions/runs/45109076116" rel="noopener noreferrer" target="_blank">#45109076116</a> del back: build, arquitectura, SonarCloud, imagen y despliegue.
+</figcaption>
+</figure>
+<figure>
+<img alt="Figura 4. Release v1.0.0 del backend: la imagen 1.0.0 es la misma sha-ead4957 desplegada en beta-back." height="380" loading="lazy" src="img/03_Despliegue/figura-4.png" width="1240"/>
+<figcaption>
+Figura 4. Release v1.0.0 del backend: la imagen 1.0.0 es la misma sha-ead4957 desplegada en beta-back.
+</figcaption>
+</figure>
+<figure>
+<img alt="Figura 5. Pantalla de inicio de sesión en producción (https://beta-front.taila95c4c.ts.net/login)." height="490" loading="lazy" src="img/03_Despliegue/figura-5.png" width="505"/>
+<figcaption>
+Figura 5. Pantalla de inicio de sesión en producción (https://beta-front.taila95c4c.ts.net/login).
+</figcaption>
+</figure>
+<p><strong>Resultado de validación / smoke test:</strong> verificación manual del 23/11/2026 contra la URL pública: /healthz, / y /login responden 200 con certificado TLS válido; /api/v1/procesos sin token responde 401; un login con credenciales inválidas responde 401. Los despliegues del 23/11/2026 pasaron la verificación automática del workflow.</p>
+<h3 id="matriz-de-ambientes">Matriz de ambientes</h3>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+<caption>
+Tabla 1. Ambientes.
+</caption>
+
+<thead>
+<tr>
+<th><strong>Ambiente</strong></th>
+<th><strong>URL / host</strong></th>
+<th><strong>Componentes</strong></th>
+<th><strong>Responsable</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local (desarrollo)</td>
+<td>localhost:4200 y localhost:8080</td>
+<td>ng serve con proxy; Spring Boot con H2</td>
+<td>Cada integrante</td>
+</tr>
+<tr>
+<td>Pruebas CI: API y carga</td>
+<td>beta-back, puerto temporal (Tailscale)</td>
+<td>beta-back-ci con la imagen :pr-N y proyecto_ci</td>
+<td>GitHub Actions (Postman y JMeter)</td>
+</tr>
+<tr>
+<td>Pruebas CI: E2E</td>
+<td>runner :8080 y beta-back temporal</td>
+<td>Imagen del front y beta-back-ci-front con proyecto_ci_front</td>
+<td>GitHub Actions (Selenium)</td>
+</tr>
+<tr>
+<td>Producción</td>
+<td>https://beta-front.taila95c4c.ts.net</td>
+<td>beta-front (nginx), beta-back (API) y PostgreSQL proyecto_desarrollo</td>
+<td>Samuel Bonilla (CI/CD); aprobación en production</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="registro-de-despliegues">Registro de despliegues</h3>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+<caption>
+Tabla 2. Registro de despliegues de GitHub Actions (hora UTC).
+</caption>
+
+<thead>
+<tr>
+<th><strong>Fecha</strong></th>
+<th><strong>Versión</strong></th>
+<th><strong>Ambiente</strong></th>
+<th><strong>Resultado / evidencia</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>18/11/2026 03:58</td>
+<td>front a7ebd30 (PR #32, CI/CD)</td>
+<td>Producción</td>
+<td>Desplegado · run #44233827533</td>
+</tr>
+<tr>
+<td>18/11/2026 04:04</td>
+<td>back d2479d5 (PR #49, CI/CD)</td>
+<td>Producción</td>
+<td>Desplegado · run #44233777862</td>
+</tr>
+<tr>
+<td>18/11/2026 04:25</td>
+<td>front 0dc05d3 (PR #33) → v1.0.0</td>
+<td>Producción</td>
+<td>Desplegado · run #44237003123; release v1.0.0</td>
+</tr>
+<tr>
+<td>18/11/2026 04:27</td>
+<td>back ead4957 (PR #50) → v1.0.0</td>
+<td>Producción</td>
+<td>Desplegado · run #44236968744; release v1.0.0</td>
+</tr>
+<tr>
+<td>23/11/2026 02:51</td>
+<td>front 4b55e32 (PR #39, refresh token)</td>
+<td>Producción</td>
+<td>Desplegado · run #45102325192</td>
+</tr>
+<tr>
+<td>23/11/2026 02:53</td>
+<td>front 182bd1f (PR #40, pulido visual)</td>
+<td>Producción</td>
+<td>Desplegado · run #45102355678</td>
+</tr>
+<tr>
+<td>23/11/2026 02:55</td>
+<td>back 894c9fb (PR #53, refresh token)</td>
+<td>Producción</td>
+<td>Desplegado · run #45102483587</td>
+</tr>
+<tr>
+<td>23/11/2026 03:18</td>
+<td>front 276f3a2 (PR #38, E2E en CI)</td>
+<td>Producción</td>
+<td>Desplegado · run #45104988136</td>
+</tr>
+<tr>
+<td>23/11/2026 03:37</td>
+<td>front ae8c227 (PR #41)</td>
+<td>Producción</td>
+<td>No desplegado: E2E falló · run #45106331410</td>
+</tr>
+<tr>
+<td>23/11/2026 03:57</td>
+<td>front 7c61265 (PR #42)</td>
+<td>Producción</td>
+<td>Desplegado · run #45108415804</td>
+</tr>
+<tr>
+<td>23/11/2026 04:03</td>
+<td>back a3f88ab (PR #52)</td>
+<td>Producción</td>
+<td>Desplegado · run #45109076116</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="anexos-y-referencias">Anexos y referencias</h2>
+<p><strong>Repositorio / documentación:</strong></p>
+<ul>
+<li>
+Backend: <a href="https://github.com/Facimus-Curiositatem/Beta-back" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-back</a> (código, pruebas en src/test, colecciones en postman/, planes en jmeter/, workflow en .github/workflows/ci.yml).
+</li>
+<li>
+Frontend: <a href="https://github.com/Facimus-Curiositatem/Beta-front" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-front</a> (Angular, pruebas unitarias *.spec.ts, suite E2E en e2e/).
+</li>
+<li>
+Documentación: <a href="https://github.com/Facimus-Curiositatem/Beta-Wiki" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-Wiki</a>.
+</li>
+<li>
+Aplicación desplegada: <a href="https://beta-front.taila95c4c.ts.net" rel="noopener noreferrer" target="_blank">https://beta-front.taila95c4c.ts.net</a>.
+</li>
+</ul>
+<p><strong>Capturas, diagramas, reportes, logs u otras evidencias:</strong></p>
+<ul>
+<li>
+Workflows: <a href="https://github.com/Facimus-Curiositatem/Beta-back/blob/main/.github/workflows/ci.yml" rel="noopener noreferrer" target="_blank">CI/CD del back</a>, <a href="https://github.com/Facimus-Curiositatem/Beta-front/blob/main/.github/workflows/ci.yml" rel="noopener noreferrer" target="_blank">CI/CD del front</a> y workflows release.yml.
+</li>
+<li>
+Compose y variables: <a href="https://github.com/Facimus-Curiositatem/Beta-back/tree/main/deploy" rel="noopener noreferrer" target="_blank">Beta-back/deploy</a> y <a href="https://github.com/Facimus-Curiositatem/Beta-front/tree/main/deploy" rel="noopener noreferrer" target="_blank">Beta-front/deploy</a>.
+</li>
+<li>
+Releases: <a href="https://github.com/Facimus-Curiositatem/Beta-back/releases/tag/v1.0.0" rel="noopener noreferrer" target="_blank">Beta-back v1.0.0</a> y <a href="https://github.com/Facimus-Curiositatem/Beta-front/releases/tag/v1.0.0" rel="noopener noreferrer" target="_blank">Beta-front v1.0.0</a>.
+</li>
+</ul>
+</article>
+</div>
