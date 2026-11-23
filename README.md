@@ -22,6 +22,14 @@ La referencia de las 28 historias de usuario y su implementación en el servicio
 - [Ejemplos de API REST](docs/EJEMPLOS_API_REST.md)
 - [Pruebas y calidad](docs/PRUEBAS_CALIDAD.md)
 
+## Documentos de la entrega final
+
+La Wiki incluye un visor de los ocho documentos de la entrega final: resumen ejecutivo, arquitectura C4, despliegue, pruebas de carga, pruebas funcionales, pruebas unitarias con SonarQube, pruebas automatizadas, y roles y seguridad.
+
+- `/documentos` lista los documentos y `/documentos/{slug}` muestra cada uno en HTML, con índice lateral y descarga en PDF y Word.
+- El contenido HTML está en `beta/src/main/resources/documentos/`; las figuras y las descargas, en `beta/src/main/resources/static/documentos/`.
+- `DocumentoRepository` registra los documentos y `DocumentoRepositoryTest` comprueba que cada figura, PDF y Word referenciado exista.
+
 La documentación cubre autenticación JWT, multitenencia, procesos, historial, actividades, arcos, gateways, roles, pools, lanes, procesos compartidos, permisos, eventos de mensaje, destinos externos y correlación.
 
 ## Funcionalidades actuales
