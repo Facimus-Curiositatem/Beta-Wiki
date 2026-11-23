@@ -1,0 +1,386 @@
+<div class="doc-layout">
+<nav class="doc-indice" aria-label="Contenido del documento">
+<p class="doc-indice-titulo">Contenido</p>
+<ol><li><a href="#ficha-del-documento">Ficha del documento</a></li><li><a href="#1-objetivo-y-estrategia">1. Objetivo y estrategia</a></li><li><a href="#2-diseno-de-suites">2. Diseño de suites</a></li><li><a href="#3-ejecucion">3. Ejecución</a></li><li><a href="#4-resultados">4. Resultados</a></li><li><a href="#5-mantenimiento-y-cierre">5. Mantenimiento y cierre</a></li><li><a href="#anexos-y-referencias">Anexos y referencias</a></li></ol>
+</nav>
+<article class="doc-cuerpo">
+<h2 id="ficha-del-documento">Ficha del documento</h2>
+<div class="doc-tabla-scroll"><table class="doc-ficha">
+
+
+<tbody><tr>
+<th scope="row">Institución / asignatura</th>
+<td>Pontificia Universidad Javeriana · Desarrollo Web (34807), periodo 2026-30</td>
+</tr>
+<tr>
+<th scope="row">Nombre del proyecto</th>
+<td>Facimus Procesos (Beta): herramienta web multiempresa para modelar procesos BPMN</td>
+</tr>
+<tr>
+<th scope="row">Equipo / integrantes</th>
+<td>Samuel Bonilla (Mundolel), Samuel Giraldo (Segiraldo0610), Juan Guillermo Gómez (GomezJuangl) y Andrés Ospina (andyospina)</td>
+</tr>
+<tr>
+<th scope="row">Docente</th>
+<td>Pablo Andrés Márquez Fernández</td>
+</tr>
+<tr>
+<th scope="row">Versión / fecha</th>
+<td>1.0 · 23/11/2026 · evidencias de CI del 23/11/2026 (backend main a3f88ab, frontend main 7c61265)</td>
+</tr>
+<tr>
+<th scope="row">Enlace al repositorio</th>
+<td><a href="https://github.com/Facimus-Curiositatem/Beta-back" rel="noopener noreferrer" target="_blank">Beta-back</a> (API REST) · <a href="https://github.com/Facimus-Curiositatem/Beta-front" rel="noopener noreferrer" target="_blank">Beta-front</a> (Angular) · <a href="https://github.com/Facimus-Curiositatem/Beta-Wiki" rel="noopener noreferrer" target="_blank">Beta-Wiki</a> (documentación)</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="1-objetivo-y-estrategia">1. Objetivo y estrategia</h2>
+<p><strong>Procesos del modelador BPMN a automatizar:</strong> los flujos completos del visor y editor de procesos: inicio y cierre de sesión con rutas protegidas, registro de empresa, ciclo de vida del proceso (BORRADOR → PUBLICADO → inactivo), modelado (pool, lane con rol, actividad, gateway y arco), y administración de usuarios y roles. Por API se automatiza el recorrido encadenado de las 28 historias, hasta la publicación y los permisos por rol.</p>
+<p><strong>Tipos de pruebas: UI, API, integración, extremo a extremo:</strong></p>
+<ul>
+<li>
+<strong>Extremo a extremo (UI):</strong> Selenium con pytest, 23 casos.
+</li>
+<li>
+<strong>API:</strong> Newman con dos colecciones Postman (122 peticiones y 116 aserciones).
+</li>
+<li>
+<strong>Integración:</strong> @SpringBootTest con H2 (seguridad, aislamiento y transacciones), dentro de los 468 casos JUnit.
+</li>
+<li>
+<strong>Unitarias:</strong> JUnit con Mockito (backend) y Karma con Jasmine (233 casos en el frontend).
+</li>
+<li>
+<strong>Carga:</strong> cuatro planes JMeter (documento 04); <strong>arquitectura:</strong> ArchUnit (35 casos); <strong>smoke:</strong> la imagen del front sirve /healthz, el index y las rutas de Angular; <strong>post-despliegue:</strong> verificación por la URL pública.
+</li>
+</ul>
+<p><strong>Herramientas y versiones:</strong> Selenium 4.53.0 con Python 3.12.16, pytest 9.2.0 y pytest-html 4.2.0 sobre Chrome sin ventana; Newman con newman-reporter-htmlextra (Node 22); Apache JMeter 5.6.3; JUnit Jupiter 6.0.3, Mockito 5.23.0 y ArchUnit 1.4.0; Karma 6.4 y Jasmine 5.6; GitHub Actions con dorny/test-reporter; Tailscale para llegar a las VMs.</p>
+<h2 id="2-diseno-de-suites">2. Diseño de suites</h2>
+<p><strong>Estructura de archivos y suites:</strong> carpeta <a href="https://github.com/Facimus-Curiositatem/Beta-front/tree/main/e2e" rel="noopener noreferrer" target="_blank">e2e/</a> de Beta-front:</p>
+<ul>
+<li>
+<strong>pages/:</strong> 12 Page Objects (base, login, registro, menú principal, procesos, pools, lanes, actividades, gateways, arcos, usuarios y roles). Solo ahí van los selectores.
+</li>
+<li>
+<strong>tests/:</strong> 6 archivos con los escenarios (test_login, test_registro_empresa, test_procesos, test_modelado, test_usuarios y test_roles).
+</li>
+<li>
+<strong>conftest.py:</strong> fixtures de navegador, empresa de prueba, sesión y datos encadenados; <strong>datos.py:</strong> generadores de datos únicos; <strong>pytest.ini</strong> y <strong>requirements.txt</strong>.
+</li>
+<li>
+<strong>Backend:</strong> postman/ (2 colecciones), jmeter/ (4 planes) y src/test/java (58 clases).
+</li>
+</ul>
+<p><strong>Casos priorizados:</strong> se priorizó por riesgo: primero sesión y rutas protegidas (seguridad), luego el modelado (núcleo del producto), el ciclo de vida del proceso y la administración. Las fixtures encadenan los datos (empresa → sesión → rol o proceso → pool → lane), así cada caso crea solo lo que necesita y los casos se pueden correr en cualquier orden.</p>
+<p><strong>Preparación y limpieza de datos:</strong> la fixture de sesión registra por la interfaz una empresa nueva por ejecución («Empresa E2E &lt;hex&gt;», correos @example.com, contraseña aleatoria con secrets.token_urlsafe), y cada caso usa nombres únicos (unico()). Los scripts ci/levantar-backend-e2e.sh y ci/bajar-backend-e2e.sh vacían la base proyecto_ci_front antes y después. En la API, la colección genera NIT y correos dinámicos y la base proyecto_ci también se vacía.</p>
+<p><strong>Identificadores / selectores y estabilidad de scripts:</strong></p>
+<ul>
+<li>
+Selectores CSS por formcontrolname y tipo de botón, XPath por el texto de la celda (fila() y celda()) e ids leídos del href de los enlaces, sin depender de posiciones.
+</li>
+<li>
+Esperas explícitas (WebDriverWait con expected_conditions) y tiempo configurable con E2E_TIMEOUT (10 s en local, 20 s en CI); la única pausa es el sondeo de 0,1 s dentro de textos_estables().
+</li>
+<li>
+Escritura con Ctrl+A y Supr para que los formularios de Angular detecten el cambio; textos_estables() espera a que la lista de mensajes de validación deje de cambiar.
+</li>
+<li>
+Un navegador nuevo por caso, ventana fija de 1366×900, captura PNG automática al fallar y ninguna credencial en el código (--tb=short evita imprimirlas).
+</li>
+</ul>
+<h2 id="3-ejecucion">3. Ejecución</h2>
+<p><strong>Comandos para ejecutar suites:</strong></p>
+<ul>
+<li>
+<strong>E2E:</strong> pip install -r e2e/requirements.txt; $env:E2E_BASE_URL = "http://&lt;host&gt;:&lt;puerto&gt;"; python -m pytest e2e -v (un archivo: python -m pytest e2e/tests/test_procesos.py -v).
+</li>
+<li>
+<strong>E2E en CI:</strong> python -m pytest e2e -v --junitxml=e2e/reportes/junit.xml --html=e2e/reportes/reporte.html --self-contained-html.
+</li>
+<li>
+<strong>API:</strong> newman run postman/Facimus-HU-Flow.postman_collection.json --env-var baseUrl=&lt;url&gt;.
+</li>
+<li>
+<strong>Carga:</strong> jmeter -n -t jmeter/plan-login.jmx -JBASE_URL=&lt;host&gt; -JPORT=&lt;puerto&gt; -l resultados.jtl -e -o html.
+</li>
+<li>
+<strong>Unitarias:</strong> ./mvnw clean verify y npx ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage.
+</li>
+</ul>
+<p><strong>Ejecución local y en integración continua (CI):</strong> en local, la suite apunta a cualquier instancia con E2E_BASE_URL, con navegador visible o sin ventana. En CI, el job «Pruebas E2E (Selenium)» del workflow CI/CD Front levanta por Tailscale y SSH un backend temporal en beta-back (imagen beta-back:latest, base vacía proyecto_ci_front), arranca en el runner la imagen del front recién publicada en http://localhost:8080 y ejecuta pytest con E2E_HEADLESS=1 y E2E_TIMEOUT=20. Después publica la tabla «Reporte E2E Selenium», un resumen y el artefacto reporte-e2e (HTML, JUnit, capturas y logs), y siempre limpia el entorno.</p>
+<p><strong>Configuración y variables requeridas:</strong></p>
+<ul>
+<li>
+<strong>Suite E2E:</strong> E2E_BASE_URL (obligatoria), E2E_HEADLESS y E2E_TIMEOUT.
+</li>
+<li>
+<strong>Secretos del CI:</strong> TS_OAUTH_CLIENT_ID y TS_OAUTH_SECRET (Tailscale), DEPLOY_SSH_KEY con BACK_KNOWN_HOSTS (SSH), DB_PASSWORD (bases de prueba) y GITHUB_TOKEN (GHCR); JWT_SECRET se genera al azar en cada ejecución (openssl rand -hex 32).
+</li>
+<li>
+<strong>Newman:</strong> baseUrl; <strong>JMeter:</strong> BASE_URL y PORT.
+</li>
+</ul>
+<p><strong>Frecuencia de ejecución:</strong> en cada pull request a main (si falla, el PR queda en rojo), en cada merge a main (el despliegue solo ocurre si pasa la suite E2E) y a mano desde Actions (workflow_dispatch) sobre cualquier rama, sin desplegar. Unitarias, arquitectura y SonarCloud corren en cada PR y en cada push a main.</p>
+<h2 id="4-resultados">4. Resultados</h2>
+<p><strong>Casos ejecutados, aprobados y fallidos:</strong> última ejecución en main (23/11/2026, 03:54 UTC, <a href="https://github.com/Facimus-Curiositatem/Beta-front/actions/runs/45108415804" rel="noopener noreferrer" target="_blank">#45108415804</a>): 23 ejecutados, 23 aprobados, 0 fallidos y 0 omitidos. Ese mismo día en CI: Karma 233/233, JUnit 468/468, Newman 122 peticiones con 116 aserciones y 0 fallos, y JMeter 3.220 muestras con 0 errores.</p>
+<p><strong>Duración de ejecución:</strong> la suite E2E tardó 135,2 s (2 min 15 s) en la última corrida y entre 113,0 y 146,1 s en las seis corridas registradas; el job completo tomó 3 min 25 s. El caso más largo es test_crear_arco_entre_actividad_y_gateway (23,8 s) y el más corto, test_ruta_protegida_sin_sesion_redirige_a_login (0,5 s). JUnit suma 47,9 s; el job de Karma, 48 s; el de Postman y JMeter, 2 min 14 s.</p>
+<p><strong>Fallos recurrentes e intermitentes:</strong> no hubo fallos intermitentes (flaky) en las seis ejecuciones registradas. El único fallo ocurrió el 23/11/2026 a las 03:32 y 03:35 UTC: test_formulario_vacio_muestra_campos_obligatorios y test_correo_con_formato_invalido (2 de 23), porque el pulido visual del PR #40 añadió tildes a los mensajes («contraseña», «válido»). El pipeline bloqueó el despliegue de main; el PR #42 actualizó los textos esperados (03:47 en verde) y main se desplegó a las 03:54.</p>
+<p><strong>Evidencias: logs, video, reportes, capturas:</strong> reporte pytest-html y JUnit del artefacto reporte-e2e (<a href="https://github.com/Facimus-Curiositatem/Beta-front/actions/runs/45108415804" rel="noopener noreferrer" target="_blank">ejecución #45108415804</a>), logs del front y del backend temporal en reporte-e2e/logs y capturas PNG automáticas de los casos fallidos (ejecuciones del 23/11 a las 03:32 y 03:35 UTC).</p>
+<figure>
+<img alt="Figura 1. Reporte pytest-html de la última ejecución en main: 23 aprobados, 0 fallidos, en 2 min 15 s." height="948" loading="lazy" src="img/07_Pruebas_Automatizadas/figura-1.png" width="1482"/>
+<figcaption>
+Figura 1. Reporte pytest-html de la última ejecución en main: 23 aprobados, 0 fallidos, en 2 min 15 s.
+</figcaption>
+</figure>
+<figure>
+<img alt="Figura 2. Historial de la suite E2E en GitHub Actions: casos aprobados y fallidos y duración de cada corrida." height="600" loading="lazy" src="img/07_Pruebas_Automatizadas/figura-2.png" width="1320"/>
+<figcaption>
+Figura 2. Historial de la suite E2E en GitHub Actions: casos aprobados y fallidos y duración de cada corrida.
+</figcaption>
+</figure>
+<h2 id="5-mantenimiento-y-cierre">5. Mantenimiento y cierre</h2>
+<p><strong>Criterios de aceptación:</strong> 100 % de casos E2E aprobados en el PR (condición para el merge) y en main (condición para desplegar); 0 fallos en Postman (si una aserción falla, el job falla); JMeter informativo, con los umbrales del documento 04; Quality Gate de SonarCloud aprobado; y ningún caso intermitente: si aparece uno, se corrige la espera o el selector, no se reintenta.</p>
+<p><strong>Acciones correctivas y responsables:</strong></p>
+<ul>
+<li>
+Actualizar los textos esperados del login tras el pulido visual: Samuel Bonilla (PR #42, hecho el 23/11/2026).
+</li>
+<li>
+Corregir el orden, las variables y las aserciones de Facimus-Procesos-API: Samuel Bonilla (propuesto).
+</li>
+<li>
+Casos E2E para mensajes, correlación, procesos compartidos y permisos de estructura: Samuel Bonilla y Samuel Giraldo (propuesto).
+</li>
+<li>
+Agregar el frontend a SonarCloud y umbrales de duración en JMeter: Juan Guillermo Gómez y Andrés Ospina (propuesto).
+</li>
+</ul>
+<p><strong>Mantenimiento de scripts:</strong> el patrón Page Object concentra los selectores, así que un cambio de pantalla se corrige en un solo archivo; los tests describen el comportamiento. Si cambian los textos de la interfaz, se actualizan los mensajes esperados (como en el PR #42). Los datos únicos por ejecución evitan depender de limpiezas manuales. Las dependencias tienen rangos acotados (selenium&gt;=4.52,&lt;5 y pytest&gt;=8,&lt;10), Selenium Manager resuelve el chromedriver y los reportes se conservan 14 días como artefactos.</p>
+<p><strong>Conclusiones:</strong> las pruebas E2E, de API, de carga, unitarias y de arquitectura corren solas en cada cambio y actúan como compuertas del merge y del despliegue. El 23/11/2026 la compuerta E2E detectó que los textos del login habían cambiado sin actualizar las pruebas y bloqueó el despliegue hasta corregirlo. Queda pendiente ampliar los casos E2E a mensajes, correlación y procesos compartidos.</p>
+<h3 id="inventario-de-scripts">Inventario de scripts</h3>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+<caption>
+Tabla 1. Inventario de scripts. Responsables según los autores de los commits de cada carpeta.
+</caption>
+
+<thead>
+<tr>
+<th><strong>ID</strong></th>
+<th><strong>Flujo / suite</strong></th>
+<th><strong>Tipo</strong></th>
+<th><strong>Ubicación / comando</strong></th>
+<th><strong>Responsable</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="doc-id">AU-01</td>
+<td>Login y sesión (6 casos)</td>
+<td>E2E UI · Selenium</td>
+<td>e2e/tests/test_login.py</td>
+<td>Samuel Bonilla</td>
+</tr>
+<tr>
+<td class="doc-id">AU-02</td>
+<td>Registro de empresa (2)</td>
+<td>E2E UI · Selenium</td>
+<td>e2e/tests/test_registro_empresa.py</td>
+<td>Samuel Bonilla</td>
+</tr>
+<tr>
+<td class="doc-id">AU-03</td>
+<td>Procesos: crear, validar, editar, publicar y eliminar (5)</td>
+<td>E2E UI · Selenium</td>
+<td>e2e/tests/test_procesos.py</td>
+<td>Samuel Bonilla</td>
+</tr>
+<tr>
+<td class="doc-id">AU-04</td>
+<td>Modelado: pool, lane, actividad, gateway y arco (5)</td>
+<td>E2E UI · Selenium</td>
+<td>e2e/tests/test_modelado.py</td>
+<td>Samuel Bonilla</td>
+</tr>
+<tr>
+<td class="doc-id">AU-05</td>
+<td>Usuarios: crear, desactivar y reactivar (2)</td>
+<td>E2E UI · Selenium</td>
+<td>e2e/tests/test_usuarios.py</td>
+<td>Samuel Bonilla</td>
+</tr>
+<tr>
+<td class="doc-id">AU-06</td>
+<td>Roles: crear, editar y eliminar (3)</td>
+<td>E2E UI · Selenium</td>
+<td>e2e/tests/test_roles.py</td>
+<td>Samuel Bonilla</td>
+</tr>
+<tr>
+<td class="doc-id">AU-07</td>
+<td>Flujo encadenado de las 28 HU (69 peticiones)</td>
+<td>API · Newman</td>
+<td>postman/Facimus-HU-Flow.postman_collection.json</td>
+<td>Samuel Bonilla, Juan Guillermo Gómez</td>
+</tr>
+<tr>
+<td class="doc-id">AU-08</td>
+<td>Catálogo de endpoints (53 peticiones)</td>
+<td>API · Newman</td>
+<td>postman/Facimus-Procesos-API.postman_collection.json</td>
+<td>Samuel Bonilla, Juan Guillermo Gómez</td>
+</tr>
+<tr>
+<td class="doc-id">AU-09</td>
+<td>Carga: 4 planes</td>
+<td>Carga · JMeter</td>
+<td>jmeter/*.jmx (`jmeter -n -t ...`)</td>
+<td>Samuel Bonilla, Juan Guillermo Gómez</td>
+</tr>
+<tr>
+<td class="doc-id">AU-10</td>
+<td>Unitarias e integración backend (58 clases)</td>
+<td>Unitaria / integración · JUnit</td>
+<td>src/test/java (`./mvnw clean verify`)</td>
+<td>Samuel Bonilla, Samuel Giraldo, Juan Guillermo Gómez, Andrés Ospina</td>
+</tr>
+<tr>
+<td class="doc-id">AU-11</td>
+<td>Reglas de arquitectura (35 casos)</td>
+<td>Arquitectura · ArchUnit</td>
+<td>src/test/java/.../arquitectura</td>
+<td>Samuel Bonilla, Samuel Giraldo</td>
+</tr>
+<tr>
+<td class="doc-id">AU-12</td>
+<td>Unitarias frontend (52 specs, 233 casos)</td>
+<td>Unitaria · Karma</td>
+<td>src/**/*.spec.ts (`npx ng test`)</td>
+<td>Samuel Bonilla, Juan Guillermo Gómez, Samuel Giraldo</td>
+</tr>
+<tr>
+<td class="doc-id">AU-13</td>
+<td>Smoke test de la imagen del front</td>
+<td>Smoke · curl</td>
+<td>.github/workflows/ci.yml (job docker)</td>
+<td>Samuel Bonilla</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="registro-de-ejecuciones">Registro de ejecuciones</h3>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+<caption>
+Tabla 2. Registro de ejecuciones en GitHub Actions (hora UTC).
+</caption>
+
+<thead>
+<tr>
+<th><strong>Fecha / versión</strong></th>
+<th><strong>Suite</strong></th>
+<th><strong>Aprobados</strong></th>
+<th><strong>Fallidos</strong></th>
+<th><strong>Reporte / evidencia</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>18/11/2026 20:53 · PR #38</td>
+<td>E2E Selenium</td>
+<td>23</td>
+<td>0</td>
+<td>#44394362163 (115,8 s)</td>
+</tr>
+<tr>
+<td>18/11/2026 20:58 · PR #38</td>
+<td>E2E Selenium</td>
+<td>23</td>
+<td>0</td>
+<td>#44395590346 (135,6 s)</td>
+</tr>
+<tr>
+<td>23/11/2026 03:32 · PR #41</td>
+<td>E2E Selenium</td>
+<td>21</td>
+<td>2</td>
+<td>#45106316136 (textos con tilde)</td>
+</tr>
+<tr>
+<td>23/11/2026 03:35 · main</td>
+<td>E2E Selenium</td>
+<td>21</td>
+<td>2</td>
+<td>#45106331410 (despliegue bloqueado)</td>
+</tr>
+<tr>
+<td>23/11/2026 03:35 · PR #52 (back)</td>
+<td>JUnit + ArchUnit</td>
+<td>468</td>
+<td>0</td>
+<td>#45106746670 · reporte-junit</td>
+</tr>
+<tr>
+<td>23/11/2026 03:38 · PR #52 (back)</td>
+<td>Postman + JMeter</td>
+<td>122 peticiones; 3.220 muestras</td>
+<td>0</td>
+<td>#45106746670, intento 1 · reporte-postman y reporte-jmeter</td>
+</tr>
+<tr>
+<td>23/11/2026 04:50–04:52 · PR #52 (back)</td>
+<td>Postman + JMeter con medición de recursos</td>
+<td>122 peticiones; 3.220 muestras</td>
+<td>0</td>
+<td>#45106746670, intento 2 (documento 04)</td>
+</tr>
+<tr>
+<td>23/11/2026 03:47 · PR #42</td>
+<td>E2E Selenium</td>
+<td>23</td>
+<td>0</td>
+<td>#45107844062 (114,2 s)</td>
+</tr>
+<tr>
+<td>23/11/2026 03:52 · main (front)</td>
+<td>Karma</td>
+<td>233</td>
+<td>0</td>
+<td>#45108415804 · reporte-cobertura-front</td>
+</tr>
+<tr>
+<td>23/11/2026 03:54 · main (front)</td>
+<td>E2E Selenium</td>
+<td>23</td>
+<td>0</td>
+<td>#45108415804 (135,2 s) · desplegado</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="anexos-y-referencias">Anexos y referencias</h2>
+<p><strong>Repositorio / documentación:</strong></p>
+<ul>
+<li>
+Backend: <a href="https://github.com/Facimus-Curiositatem/Beta-back" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-back</a> (código, pruebas en src/test, colecciones en postman/, planes en jmeter/, workflow en .github/workflows/ci.yml).
+</li>
+<li>
+Frontend: <a href="https://github.com/Facimus-Curiositatem/Beta-front" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-front</a> (Angular, pruebas unitarias *.spec.ts, suite E2E en e2e/).
+</li>
+<li>
+Documentación: <a href="https://github.com/Facimus-Curiositatem/Beta-Wiki" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-Wiki</a>.
+</li>
+<li>
+Aplicación desplegada: <a href="https://beta-front.taila95c4c.ts.net" rel="noopener noreferrer" target="_blank">https://beta-front.taila95c4c.ts.net</a>.
+</li>
+</ul>
+<p><strong>Capturas, diagramas, reportes, logs u otras evidencias:</strong></p>
+<ul>
+<li>
+Selenium en main: <a href="https://github.com/Facimus-Curiositatem/Beta-front/actions/runs/45108415804" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-front/actions/runs/45108415804</a> (artefacto reporte-e2e).
+</li>
+<li>
+Fallo detectado y bloqueo del despliegue: <a href="https://github.com/Facimus-Curiositatem/Beta-front/actions/runs/45106331410" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-front/actions/runs/45106331410</a>; corrección en <a href="https://github.com/Facimus-Curiositatem/Beta-front/pull/42" rel="noopener noreferrer" target="_blank">Beta-front PR #42</a>.
+</li>
+<li>
+Postman y JMeter: <a href="https://github.com/Facimus-Curiositatem/Beta-back/actions/runs/45106746670/attempts/2" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-back/actions/runs/45106746670/attempts/2</a>.
+</li>
+</ul>
+</article>
+</div>
