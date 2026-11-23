@@ -1,0 +1,320 @@
+<div class="doc-layout">
+<nav class="doc-indice" aria-label="Contenido del documento">
+<p class="doc-indice-titulo">Contenido</p>
+<ol><li><a href="#ficha-del-documento">Ficha del documento</a></li><li><a href="#1-objetivo-y-alcance">1. Objetivo y alcance</a></li><li><a href="#2-escenarios-y-criterios">2. Escenarios y criterios</a></li><li><a href="#3-preparacion-y-ejecucion">3. Preparación y ejecución</a></li><li><a href="#4-resultados-y-analisis">4. Resultados y análisis</a></li><li><a href="#5-cierre">5. Cierre</a></li><li><a href="#anexos-y-referencias">Anexos y referencias</a></li></ol>
+</nav>
+<article class="doc-cuerpo">
+<h2 id="ficha-del-documento">Ficha del documento</h2>
+<div class="doc-tabla-scroll"><table class="doc-ficha">
+
+
+<tbody><tr>
+<th scope="row">Institución / asignatura</th>
+<td>Pontificia Universidad Javeriana · Desarrollo Web (34807), periodo 2026-30</td>
+</tr>
+<tr>
+<th scope="row">Nombre del proyecto</th>
+<td>Facimus Procesos (Beta): herramienta web multiempresa para modelar procesos BPMN</td>
+</tr>
+<tr>
+<th scope="row">Equipo / integrantes</th>
+<td>Samuel Bonilla (Mundolel), Samuel Giraldo (Segiraldo0610), Juan Guillermo Gómez (GomezJuangl) y Andrés Ospina (andyospina)</td>
+</tr>
+<tr>
+<th scope="row">Docente</th>
+<td>Pablo Andrés Márquez Fernández</td>
+</tr>
+<tr>
+<th scope="row">Versión / fecha</th>
+<td>1.0 · 23/11/2026 · evidencias de CI del 23/11/2026 (backend main a3f88ab, frontend main 7c61265)</td>
+</tr>
+<tr>
+<th scope="row">Enlace al repositorio</th>
+<td><a href="https://github.com/Facimus-Curiositatem/Beta-back" rel="noopener noreferrer" target="_blank">Beta-back</a> (API REST) · <a href="https://github.com/Facimus-Curiositatem/Beta-front" rel="noopener noreferrer" target="_blank">Beta-front</a> (Angular) · <a href="https://github.com/Facimus-Curiositatem/Beta-Wiki" rel="noopener noreferrer" target="_blank">Beta-Wiki</a> (documentación)</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="1-objetivo-y-alcance">1. Objetivo y alcance</h2>
+<p><strong>Objetivo medible de la prueba:</strong> comprobar que la API REST, desplegada como contenedor Docker con el perfil prod y PostgreSQL, atiende hasta 50 usuarios concurrentes en los flujos críticos (autenticación, gestión de procesos y roles, y modelado BPMN) con p95 ≤ 1.000 ms, p99 ≤ 1.500 ms, 0 % de errores y APDEX ≥ 0,85 en cada escenario.</p>
+<p><strong>Flujos BPMN o endpoints que serán evaluados:</strong> cuatro planes JMeter que reproducen flujos reales de uso. Cada usuario virtual registra su propia empresa e inicia sesión antes de operar, de modo que la carga respeta el aislamiento multiempresa.</p>
+<ul>
+<li>
+<strong>CP-01 Autenticación</strong> (plan-login.jmx): POST /api/v1/empresas, POST /api/v1/auth/login, POST /api/v1/auth/refresh y POST /api/v1/auth/logout.
+</li>
+<li>
+<strong>CP-02 CRUD de procesos</strong> (plan-procesos-crud.jmx): crear, listar, consultar, editar, publicar (PATCH con estado PUBLICADO) y eliminar sobre /api/v1/procesos.
+</li>
+<li>
+<strong>CP-03 CRUD de roles</strong> (plan-roles-crud.jmx): crear, listar, editar y eliminar sobre /api/v1/roles.
+</li>
+<li>
+<strong>CP-04 Modelado BPMN</strong> (plan-modelado-bpmn.jmx): crear rol y proceso, listar pools, crear lane, dos actividades y un gateway, conectar dos arcos, editar una actividad, listar actividades y arcos, y consultar el diagrama completo (GET /api/v1/procesos/{id}/diagrama).
+</li>
+</ul>
+<p><strong>Ambiente y características de infraestructura:</strong></p>
+<ul>
+<li>
+<strong>Sistema bajo prueba:</strong> contenedor Docker temporal beta-back-ci en la VM beta-back (Ubuntu 22.04.5 LTS sobre VMware, 4 vCPU Intel Xeon Gold 6240R a 2,40 GHz y 11,6 GiB de RAM), con la imagen ghcr.io/facimus-curiositatem/beta-back:pr-52: Spring Boot 4.1.0, Java 21.0.13 y Tomcat 11.0.22, perfil prod, límite de 768 MB de memoria y heap máximo del 60 % (-XX:MaxRAMPercentage=60).
+</li>
+<li>
+<strong>Base de datos:</strong> PostgreSQL 18.6 en una VM dedicada de la red de la universidad; base proyecto_ci, que se vacía antes y después de cada corrida (Hibernate ddl-auto=create).
+</li>
+<li>
+<strong>Generador de carga:</strong> runner ubuntu-latest alojado por GitHub (AWS, us-east-1, 4 procesadores) con Apache JMeter 5.6.3 y 1 GB de heap; llega a la VM por Tailscale.
+</li>
+<li>
+La misma VM aloja el contenedor de producción (beta-back, límite de 1 GB), que siguió en servicio durante la prueba.
+</li>
+</ul>
+<h2 id="2-escenarios-y-criterios">2. Escenarios y criterios</h2>
+<p><strong>Usuarios concurrentes esperados:</strong> el equipo fijó como carga objetivo hasta 50 usuarios virtuales simultáneos: 50 en autenticación (todo usuario pasa por el login), 30 en el CRUD de procesos y 20 en el CRUD de roles y en el modelado BPMN.</p>
+<p><strong>Patrón de incremento de carga:</strong> rampa lineal del Thread Group de JMeter, sin tiempo de espera entre peticiones (think time 0). CP-01 arranca 50 hilos en 10 s (5 hilos/s); CP-02, 30 hilos en 10 s (3 hilos/s); CP-03 y CP-04, 20 hilos en 5 s (4 hilos/s). Cada hilo repite su flujo 5, 3, 5 y 3 veces, respectivamente, así que al terminar la rampa toda la concurrencia queda activa (carga de estrés sostenida). Los planes se ejecutan uno tras otro, no en paralelo.</p>
+<p><strong>Duración de cada escenario:</strong> medida entre la primera y la última muestra del archivo JTL: CP-01 14,7 s (1.000 peticiones), CP-02 12,9 s (720 peticiones), CP-03 9,0 s (600 peticiones), CP-04 10,6 s (900 peticiones). En total, 3.220 peticiones en unos 47 s de carga efectiva.</p>
+<p><strong>Umbrales de aceptación definidos por el equipo:</strong></p>
+<ul>
+<li>
+<strong>Errores = 0 %:</strong> toda petición debe devolver el código esperado (aserciones 200, 201 o 204 en cada sampler).
+</li>
+<li>
+<strong>Latencia por escenario:</strong> p95 ≤ 1.000 ms y p99 ≤ 1.500 ms (1.500 ms es el umbral de frustración del APDEX de JMeter).
+</li>
+<li>
+<strong>APDEX ≥ 0,85</strong> por escenario, con T = 500 ms y F = 1.500 ms (configuración por defecto del dashboard).
+</li>
+<li>
+<strong>Throughput:</strong> sin mínimo obligatorio; se registra como línea base para comparar versiones.
+</li>
+</ul>
+<h2 id="3-preparacion-y-ejecucion">3. Preparación y ejecución</h2>
+<p><strong>Herramienta empleada y versión:</strong> Apache JMeter 5.6.3 en modo sin interfaz (jmeter -n) con dashboard HTML (-e -o), sobre Java 21 (Temurin) en el runner de GitHub Actions. El script ci/resumen_jmeter.py publica el resumen en la página de la ejecución y el artefacto reporte-jmeter guarda el JTL, el log y el dashboard de cada plan.</p>
+<p><strong>Datos de prueba utilizados:</strong> datos sintéticos generados en cada iteración con funciones de JMeter (${__threadNum}, ${__RandomString}): empresa, NIT y correo de administrador únicos, contraseña de prueba fija y nombres únicos de roles, procesos, lanes, actividades y gateways. El token, el refresh token y los ids creados (proceso, pool, lane, rol, actividades y gateway) se capturan con JSON Extractor y se envían en las peticiones siguientes con un HTTP Header Manager (Authorization: Bearer). No se usan datos reales.</p>
+<p><strong>Configuración del script / enlace:</strong> carpeta <a href="https://github.com/Facimus-Curiositatem/Beta-back/tree/main/jmeter" rel="noopener noreferrer" target="_blank">jmeter/</a> de Beta-back. Cada plan recibe BASE_URL y PORT como propiedades (${__P(BASE_URL,localhost)}, ${__P(PORT,8080)}) y define un Thread Group con la rampa indicada, aserciones de código de respuesta en cada petición, JSON Extractors y encabezados por petición, sin temporizadores. Se ejecuta en el job «Postman y JMeter (VM beta-back)» de <a href="https://github.com/Facimus-Curiositatem/Beta-back/blob/main/.github/workflows/ci.yml" rel="noopener noreferrer" target="_blank">.github/workflows/ci.yml</a>.</p>
+<p><strong>Procedimiento de ejecución:</strong></p>
+<ul>
+<li>
+Un pull request hacia main dispara el workflow CI/CD Backend: build, JUnit, ArchUnit, SonarCloud y publicación de la imagen :pr-N en GHCR.
+</li>
+<li>
+El job de pruebas de API se conecta a Tailscale, abre SSH a beta-back y levanta el backend temporal con la imagen del PR contra proyecto_ci (ci/levantar-backend-ci.sh).
+</li>
+<li>
+Cuando la API responde 401/403 en /api/v1/procesos, ejecuta las colecciones Postman y luego los cuatro planes: jmeter -n -t jmeter/&lt;plan&gt;.jmx -JBASE_URL=&lt;host&gt; -JPORT=&lt;puerto&gt; -l resultados.jtl -j jmeter.log -e -o html.
+</li>
+<li>
+Publica el resumen en la página de la ejecución y los artefactos reporte-postman y reporte-jmeter (retención de 14 días).
+</li>
+<li>
+Siempre baja el backend temporal y vacía la base (ci/bajar-backend-ci.sh).
+</li>
+<li>
+Para medir recursos, el 23/11/2026 se re-ejecutó el job del PR #52 (intento 2) mientras un script en beta-back registraba cada segundo la CPU y la memoria de los cgroups de Docker y del host. Los resultados de este documento corresponden a esa corrida.
+</li>
+</ul>
+<h2 id="4-resultados-y-analisis">4. Resultados y análisis</h2>
+<p><strong>Latencia media, p95 y p99:</strong> valores del dashboard de JMeter (statistics.json): CP-01 media 293,1 ms, p95 578,9 ms y p99 696,9 ms (máximo 849 ms); CP-02 media 137,4 ms, p95 279,0 ms y p99 303,9 ms (máximo 333 ms); CP-03 media 149,8 ms, p95 302,9 ms y p99 368,0 ms (máximo 410 ms); CP-04 media 130,1 ms, p95 282,9 ms y p99 318,0 ms (máximo 389 ms). Sobre las 3.220 muestras de los cuatro JTL: media 186,0 ms, mediana 114 ms, p95 480 ms y p99 619 ms.</p>
+<figure>
+<img alt="Figura 1. Media, p95 y p99 por escenario frente al umbral de p95. Fuente: dashboards de JMeter del artefacto reporte-jmeter." height="640" loading="lazy" src="img/04_Pruebas_Carga/figura-1.png" width="1320"/>
+<figcaption>
+Figura 1. Media, p95 y p99 por escenario frente al umbral de p95. Fuente: dashboards de JMeter del artefacto reporte-jmeter.
+</figcaption>
+</figure>
+<p><strong>Solicitudes por segundo / throughput:</strong> CP-01 67,9 peticiones/s, CP-02 56,0 peticiones/s, CP-03 66,5 peticiones/s, CP-04 85,1 peticiones/s (rendimiento agregado de cada escenario). Por operación, entre 6,8 y 17,7 peticiones/s, según el número de pasos de cada flujo.</p>
+<p><strong>Tasa de errores:</strong> 0,00 % (0 errores en 3.220 peticiones). Todas las aserciones de código de respuesta pasaron y el log del backend temporal no registra excepciones.</p>
+<p><strong>Consumo de CPU y memoria:</strong> medido en la VM beta-back con muestreo cada segundo de los cgroups v2 del contenedor de pruebas (límite de 768 MB). En reposo, tras el arranque, el contenedor usaba 260 MB y 0,28 núcleos. El pico de memoria fue 418 MB (54 % del límite) y la CPU de toda la VM llegó a 98,8 % como máximo; no hubo reinicios ni errores por memoria.</p>
+<ul>
+<li>
+<strong>Postman:</strong> CPU media 0,52 núcleos (máx. 1,69, 42 % de los 4 vCPU); memoria media 332 MB (máx. 338 MB).
+</li>
+<li>
+<strong>CP-01:</strong> CPU media 3,10 núcleos (máx. 3,79, 95 % de los 4 vCPU); memoria media 364 MB (máx. 382 MB).
+</li>
+<li>
+<strong>CP-02:</strong> CPU media 2,01 núcleos (máx. 2,84, 71 % de los 4 vCPU); memoria media 413 MB (máx. 418 MB).
+</li>
+<li>
+<strong>CP-03:</strong> CPU media 2,52 núcleos (máx. 3,56, 89 % de los 4 vCPU); memoria media 405 MB (máx. 406 MB).
+</li>
+<li>
+<strong>CP-04:</strong> CPU media 2,29 núcleos (máx. 3,33, 83 % de los 4 vCPU); memoria media 394 MB (máx. 404 MB).
+</li>
+</ul>
+<figure>
+<img alt="Figura 2. CPU y memoria del contenedor de pruebas durante Postman y los cuatro escenarios JMeter. Fuente: muestreo de cgroups en beta-back." height="740" loading="lazy" src="img/04_Pruebas_Carga/figura-2.png" width="1320"/>
+<figcaption>
+Figura 2. CPU y memoria del contenedor de pruebas durante Postman y los cuatro escenarios JMeter. Fuente: muestreo de cgroups en beta-back.
+</figcaption>
+</figure>
+<p><strong>Cuellos de botella identificados:</strong></p>
+<ul>
+<li>
+<strong>CPU:</strong> en CP-01 el contenedor llegó a 3,79 núcleos (95 % de los 4 vCPU) y la VM completa a 98,8 %: con 50 usuarios simultáneos, el hash BCrypt de registro y login satura la CPU. La memoria no es una restricción (máximo de 418 MB, 54 % del límite).
+</li>
+<li>
+<strong>Registro y login (BCrypt):</strong> son las operaciones más costosas en los cuatro escenarios, con p95 agregado de 628 ms y 520 ms, frente a 103–150 ms del resto de operaciones. Ambas calculan o verifican un hash BCrypt, un costo de CPU deliberado por seguridad; el registro además crea empresa y administrador en una sola transacción. Con 50 hilos, el registro baja a un APDEX de 0,810, nivel «regular» de la escala (de 0,70 a 0,85).
+</li>
+<li>
+<strong>Resto de la API:</strong> CRUD y modelado se mantienen entre 97 ms y 119 ms de media, incluido el diagrama completo del proceso; no hay degradación progresiva durante la rampa.
+</li>
+<li>
+<strong>Latencia de red:</strong> todas las peticiones tienen un piso de unos 90 ms (mínimo observado), incluso un GET simple, y Newman muestra el mismo piso (93 ms). Ese piso corresponde sobre todo al trayecto entre el runner de GitHub (AWS, us-east-1, EE. UU.) y la VM a través de Tailscale, no al procesamiento del servidor.
+</li>
+</ul>
+<figure>
+<img alt="Figura 3. p95 por operación, agregando las cuatro corridas; en rojo, las operaciones que usan BCrypt." height="920" loading="lazy" src="img/04_Pruebas_Carga/figura-3.png" width="1320"/>
+<figcaption>
+Figura 3. p95 por operación, agregando las cuatro corridas; en rojo, las operaciones que usan BCrypt.
+</figcaption>
+</figure>
+<h2 id="5-cierre">5. Cierre</h2>
+<p><strong>Comparación con criterios de aceptación:</strong> los cuatro escenarios cumplen todos los umbrales (tabla «Resultados»): p95 máximo 578,9 ms (CP-01) frente a 1.000 ms; p99 máximo 696,9 ms frente a 1.500 ms; 0,00 % de errores; y APDEX de 0,932 (CP-01), 1,000 (CP-02), 1,000 (CP-03), 1,000 (CP-04), todos ≥ 0,85. El margen más estrecho está en la autenticación, por el costo de BCrypt.</p>
+<p><strong>Acciones de mejora:</strong></p>
+<ul>
+<li>
+Convertir los umbrales en aserciones de duración (Duration Assertion) para que el job falle si se superan, como ya ocurre con las aserciones de Postman.
+</li>
+<li>
+Incluir en el CI la medición de recursos (Spring Boot Actuator con Micrometer, o el muestreo de cgroups usado en este documento).
+</li>
+<li>
+Agregar un escenario de resistencia (≥ 10 min) y uno de picos para detectar fugas de memoria y la saturación del pool de conexiones a PostgreSQL.
+</li>
+<li>
+Generar la carga desde la red de la universidad (por ejemplo, desde la VM beta-front) para separar la latencia de red del tiempo de servidor.
+</li>
+<li>
+Para atender más de 50 usuarios simultáneos, asignar más vCPU o réplicas al backend, porque la autenticación ya lleva la CPU cerca del 100 %; no reducir el factor de costo de BCrypt.
+</li>
+</ul>
+<p><strong>Evidencias: gráficas, reportes y logs:</strong> ejecución <a href="https://github.com/Facimus-Curiositatem/Beta-back/actions/runs/45106746670/attempts/2" rel="noopener noreferrer" target="_blank">#45106746670 (intento 2)</a> del workflow CI/CD Backend, con los artefactos reporte-jmeter (JTL, jmeter.log y dashboard HTML por plan), reporte-postman y log-backend-ci. Las figuras 1 y 3 se generaron con esos JTL, la figura 2 con el muestreo de cgroups en beta-back y la figura 4 es el dashboard del escenario CP-01.</p>
+<figure>
+<img alt="Figura 4. Dashboard HTML de JMeter del escenario CP-01 (APDEX, resumen y estadísticas)." height="948" loading="lazy" src="img/04_Pruebas_Carga/figura-4.png" width="1482"/>
+<figcaption>
+Figura 4. Dashboard HTML de JMeter del escenario CP-01 (APDEX, resumen y estadísticas).
+</figcaption>
+</figure>
+<h3 id="escenarios-de-carga">Escenarios de carga</h3>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+<caption>
+Tabla 1. Escenarios ejecutados. Fuente: jmeter/*.jmx de Beta-back.
+</caption>
+
+<thead>
+<tr>
+<th><strong>ID</strong></th>
+<th><strong>Operación</strong></th>
+<th><strong>Usuarios / rampa</strong></th>
+<th><strong>Duración</strong></th>
+<th><strong>Criterio</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="doc-id">CP-01</td>
+<td>Autenticación: registro, login, refresh y logout</td>
+<td>50 hilos / 10 s; 5 iteraciones</td>
+<td>14,7 s (1.000 peticiones)</td>
+<td>p95 ≤ 1.000 ms; p99 ≤ 1.500 ms; 0 % errores; APDEX ≥ 0,85</td>
+</tr>
+<tr>
+<td class="doc-id">CP-02</td>
+<td>CRUD de procesos: crear, listar, detalle, editar, publicar y eliminar</td>
+<td>30 hilos / 10 s; 3 iteraciones</td>
+<td>12,9 s (720 peticiones)</td>
+<td>p95 ≤ 1.000 ms; p99 ≤ 1.500 ms; 0 % errores; APDEX ≥ 0,85</td>
+</tr>
+<tr>
+<td class="doc-id">CP-03</td>
+<td>CRUD de roles: crear, listar, editar y eliminar</td>
+<td>20 hilos / 5 s; 5 iteraciones</td>
+<td>9,0 s (600 peticiones)</td>
+<td>p95 ≤ 1.000 ms; p99 ≤ 1.500 ms; 0 % errores; APDEX ≥ 0,85</td>
+</tr>
+<tr>
+<td class="doc-id">CP-04</td>
+<td>Modelado BPMN: rol, proceso, pools, lane, actividades, gateway, arcos y diagrama</td>
+<td>20 hilos / 5 s; 3 iteraciones</td>
+<td>10,6 s (900 peticiones)</td>
+<td>p95 ≤ 1.000 ms; p99 ≤ 1.500 ms; 0 % errores; APDEX ≥ 0,85</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="resultados">Resultados</h3>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+<caption>
+Tabla 2. Resultados por escenario. Fuente: statistics.json de cada dashboard (ejecución #45106746670 (intento 2)).
+</caption>
+
+<thead>
+<tr>
+<th><strong>Escenario</strong></th>
+<th><strong>p95</strong></th>
+<th><strong>RPS</strong></th>
+<th><strong>Errores %</strong></th>
+<th><strong>Cumple / evidencia</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CP-01 Autenticación</td>
+<td>578,9 ms</td>
+<td>67,9</td>
+<td>0,00 %</td>
+<td>Sí · APDEX 0,932 · reporte-jmeter/plan-login</td>
+</tr>
+<tr>
+<td>CP-02 CRUD de procesos</td>
+<td>279,0 ms</td>
+<td>56,0</td>
+<td>0,00 %</td>
+<td>Sí · APDEX 1,000 · reporte-jmeter/plan-procesos-crud</td>
+</tr>
+<tr>
+<td>CP-03 CRUD de roles</td>
+<td>302,9 ms</td>
+<td>66,5</td>
+<td>0,00 %</td>
+<td>Sí · APDEX 1,000 · reporte-jmeter/plan-roles-crud</td>
+</tr>
+<tr>
+<td>CP-04 Modelado BPMN</td>
+<td>282,9 ms</td>
+<td>85,1</td>
+<td>0,00 %</td>
+<td>Sí · APDEX 1,000 · reporte-jmeter/plan-modelado-bpmn</td>
+</tr>
+<tr>
+<td>Total (3.220 muestras)</td>
+<td>480 ms</td>
+<td>—</td>
+<td>0,00 %</td>
+<td>Sí · APDEX 0,979</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="anexos-y-referencias">Anexos y referencias</h2>
+<p><strong>Repositorio / documentación:</strong></p>
+<ul>
+<li>
+Backend: <a href="https://github.com/Facimus-Curiositatem/Beta-back" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-back</a> (código, pruebas en src/test, colecciones en postman/, planes en jmeter/, workflow en .github/workflows/ci.yml).
+</li>
+<li>
+Frontend: <a href="https://github.com/Facimus-Curiositatem/Beta-front" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-front</a> (Angular, pruebas unitarias *.spec.ts, suite E2E en e2e/).
+</li>
+<li>
+Documentación: <a href="https://github.com/Facimus-Curiositatem/Beta-Wiki" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-Wiki</a>.
+</li>
+<li>
+Aplicación desplegada: <a href="https://beta-front.taila95c4c.ts.net" rel="noopener noreferrer" target="_blank">https://beta-front.taila95c4c.ts.net</a>.
+</li>
+</ul>
+<p><strong>Capturas, diagramas, reportes, logs u otras evidencias:</strong></p>
+<ul>
+<li>
+Ejecución con los reportes de carga: <a href="https://github.com/Facimus-Curiositatem/Beta-back/actions/runs/45106746670/attempts/2" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-back/actions/runs/45106746670/attempts/2</a> (artefactos reporte-jmeter, reporte-postman y log-backend-ci; retención de 14 días).
+</li>
+<li>
+Figuras 1 a 4 de este documento: gráficas generadas con los JTL (1 y 3), muestreo de recursos en beta-back (2) y captura del dashboard de JMeter (4).
+</li>
+</ul>
+</article>
+</div>
