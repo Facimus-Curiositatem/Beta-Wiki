@@ -1,0 +1,463 @@
+<div class="doc-layout">
+<nav class="doc-indice" aria-label="Contenido del documento">
+<p class="doc-indice-titulo">Contenido</p>
+<ol><li><a href="#ficha-del-documento">Ficha del documento</a></li><li><a href="#1-alcance-tecnico">1. Alcance técnico</a></li><li><a href="#2-pruebas-unitarias">2. Pruebas unitarias</a></li><li><a href="#3-configuracion-de-sonarqube">3. Configuración de SonarQube</a></li><li><a href="#4-resultados-del-analisis">4. Resultados del análisis</a></li><li><a href="#5-acciones-y-conclusiones">5. Acciones y conclusiones</a></li><li><a href="#anexos-y-referencias">Anexos y referencias</a></li></ol>
+</nav>
+<article class="doc-cuerpo">
+<h2 id="ficha-del-documento">Ficha del documento</h2>
+<div class="doc-tabla-scroll"><table class="doc-ficha">
+
+
+<tbody><tr>
+<th scope="row">Institución / asignatura</th>
+<td>Pontificia Universidad Javeriana · Desarrollo Web (34807), periodo 2026-30</td>
+</tr>
+<tr>
+<th scope="row">Nombre del proyecto</th>
+<td>Facimus Procesos (Beta): herramienta web multiempresa para modelar procesos BPMN</td>
+</tr>
+<tr>
+<th scope="row">Equipo / integrantes</th>
+<td>Samuel Bonilla (Mundolel), Samuel Giraldo (Segiraldo0610), Juan Guillermo Gómez (GomezJuangl) y Andrés Ospina (andyospina)</td>
+</tr>
+<tr>
+<th scope="row">Docente</th>
+<td>Pablo Andrés Márquez Fernández</td>
+</tr>
+<tr>
+<th scope="row">Versión / fecha</th>
+<td>1.0 · 23/11/2026 · evidencias de CI del 23/11/2026 (backend main a3f88ab, frontend main 7c61265)</td>
+</tr>
+<tr>
+<th scope="row">Enlace al repositorio</th>
+<td><a href="https://github.com/Facimus-Curiositatem/Beta-back" rel="noopener noreferrer" target="_blank">Beta-back</a> (API REST) · <a href="https://github.com/Facimus-Curiositatem/Beta-front" rel="noopener noreferrer" target="_blank">Beta-front</a> (Angular) · <a href="https://github.com/Facimus-Curiositatem/Beta-Wiki" rel="noopener noreferrer" target="_blank">Beta-Wiki</a> (documentación)</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="1-alcance-tecnico">1. Alcance técnico</h2>
+<p><strong>Componentes frontend cubiertos:</strong> 52 archivos de prueba (*.spec.ts) con 233 casos: 28 componentes (formularios y listas de procesos, pools, lanes, actividades, gateways, arcos, eventos, mensajes, roles, usuarios, permisos, compartir, login, registro y diagrama), 17 servicios HTTP, 2 guards (authGuard y rolGuard), 2 interceptores (auth y refresh), la configuración de rutas (h4 y h8) y el componente raíz.</p>
+<p><strong>Componentes backend cubiertos:</strong> 58 clases de prueba con 468 casos:</p>
+<ul>
+<li>
+<strong>Servicios:</strong> gestión (10 clases, 54 casos) y modelado (12 clases, 137 casos).
+</li>
+<li>
+<strong>Controladores REST:</strong> gestión (8 clases, 59 casos) y modelado (8 clases, 65 casos).
+</li>
+<li>
+<strong>Seguridad:</strong> 4 clases, 101 casos (JWT, autorización por rol, aislamiento entre empresas e integración del flujo de tokens).
+</li>
+<li>
+<strong>Transaccionalidad e invariantes:</strong> 8 clases, 16 casos; <strong>arquitectura (ArchUnit):</strong> 7 clases, 35 casos; arranque del contexto: 1 caso.
+</li>
+</ul>
+<p><strong>Frameworks de prueba y versiones:</strong></p>
+<ul>
+<li>
+<strong>Backend:</strong> JUnit Jupiter 6.0.3, Mockito 5.23.0, AssertJ 3.27.7, Spring Boot Test 4.1.0 y Spring Test 7.0.8 (MockMvc), ArchUnit 1.4.0, H2 2.4.240 y JaCoCo 0.8.13, sobre Java 21.0.13 (Temurin) y Maven.
+</li>
+<li>
+<strong>Frontend:</strong> Angular 20.3, Jasmine 5.6, Karma 6.4 con Chrome sin ventana (Chrome 157), karma-coverage 2.2, karma-junit-reporter 2.0 y TypeScript 5.9.
+</li>
+</ul>
+<p><strong>Estrategia de mocks / fixtures:</strong></p>
+<ul>
+<li>
+<strong>Servicios (backend):</strong> @ExtendWith(MockitoExtension.class) con @Mock e @InjectMocks aíslan cada servicio de sus repositorios y de los servicios que llama; los datos se arman en @BeforeEach.
+</li>
+<li>
+<strong>Controladores:</strong> @WebMvcTest y MockMvc con servicios simulados y un usuario autenticado inyectado (ApiPrincipalRequestPostProcessor y SeguridadControllersTestAutoConfiguration).
+</li>
+<li>
+<strong>Integración:</strong> @SpringBootTest con H2 en memoria y una base por clase para probar seguridad, aislamiento entre empresas y transacciones reales.
+</li>
+<li>
+<strong>Frontend:</strong> TestBed con provideHttpClientTesting y HttpTestingController (30 archivos), espías de Jasmine con createSpyObj (18 archivos) y datos compartidos en src/app/testing/compartidos.fixture.ts.
+</li>
+</ul>
+<h2 id="2-pruebas-unitarias">2. Pruebas unitarias</h2>
+<p><strong>Criterios de selección de unidades:</strong> toda clase con reglas de negocio (validaciones BPMN, unicidad de nombres y correos, estados del proceso, eliminación lógica), cada controlador REST (contrato HTTP y códigos de respuesta), los componentes de seguridad (JwtService, filtro y autorización), las reglas de arquitectura y, en el frontend, los servicios HTTP, los guards, los interceptores y los componentes con lógica de formulario o de lista. Se priorizaron las reglas señaladas en las auditorías del curso: multiempresa, procesos inactivos y correo único.</p>
+<p><strong>Casos representativos:</strong> la tabla «Casos unitarios» resume 16 casos reales del backend y del frontend; los nombres corresponden a los métodos de prueba de los reportes JUnit y Karma.</p>
+<p><strong>Comandos para ejecutar pruebas:</strong></p>
+<ul>
+<li>
+Backend completo con cobertura: ./mvnw clean verify (reporte en target/site/jacoco/index.html).
+</li>
+<li>
+Solo reglas de arquitectura: ./mvnw test -Dtest="com.facimus.procesos.arquitectura.**"; una clase: ./mvnw test -Dtest=ArcoServiceTest.
+</li>
+<li>
+Frontend en CI: npx ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage (reporte en coverage/beta-front/index.html); en local: ng test.
+</li>
+</ul>
+<p><strong>Resultados, cobertura y exclusiones justificadas:</strong></p>
+<ul>
+<li>
+<strong>Backend:</strong> 468/468 casos aprobados, 0 fallos y 0 omitidos (47,9 s). JaCoCo: líneas 94,3 % (1.725 de 1.830), ramas 72,8 %, instrucciones 92,4 % y métodos 90,4 %.
+</li>
+<li>
+<strong>Frontend:</strong> 233/233 casos aprobados. Cobertura: líneas 79,1 % (865 de 1.094), sentencias 77,1 %, funciones 62,3 % y ramas 45,5 %.
+</li>
+<li>
+<strong>Exclusiones:</strong> no se configuraron exclusiones de cobertura ni de análisis; las clases de bajo valor (por ejemplo, ProcesosApplication.main, con 37 %) cuentan en el total.
+</li>
+<li>
+<strong>Aserciones:</strong> de los 311 métodos de prueba del backend, 310 tienen aserciones explícitas (assert, verify, andExpect o check de ArchUnit); el único sin aserción es contextLoads, que falla si el contexto de Spring no arranca. En el frontend, Karma no reporta ningún spec sin expect.
+</li>
+</ul>
+<figure>
+<img alt="Figura 1. Cobertura JaCoCo del backend por paquete (artefacto reporte-jacoco)." height="475" loading="lazy" src="img/06_Unitarias_SonarQube/figura-1.png" width="1160"/>
+<figcaption>
+Figura 1. Cobertura JaCoCo del backend por paquete (artefacto reporte-jacoco).
+</figcaption>
+</figure>
+<figure>
+<img alt="Figura 2. Cobertura del frontend con karma-coverage (artefacto reporte-cobertura-front)." height="848" loading="lazy" src="img/06_Unitarias_SonarQube/figura-2.png" width="1482"/>
+<figcaption>
+Figura 2. Cobertura del frontend con karma-coverage (artefacto reporte-cobertura-front).
+</figcaption>
+</figure>
+<h2 id="3-configuracion-de-sonarqube">3. Configuración de SonarQube</h2>
+<p><strong>Edición / versión / proyecto:</strong> SonarQube Cloud (SonarCloud), organización facimus-curiositatem, proyecto Facimus-Curiositatem_Beta-back («Facimus Procesos Backend», versión 0.0.1-SNAPSHOT), analizado con sonar-maven-plugin 4.0.0.4121 y el perfil integrado «Sonar way» para Java: <a href="https://sonarcloud.io/summary/overall?id=Facimus-Curiositatem_Beta-back&amp;branch=main" rel="noopener noreferrer" target="_blank">panel del proyecto</a>.</p>
+<p><strong>Integración con repositorio o CI:</strong> job «SonarCloud» del workflow CI/CD Backend: mvn -B verify sonar:sonar -Dsonar.qualitygate.wait=true con el secreto SONAR_TOKEN, en cada pull request y en cada push a main. La cobertura se lee de target/site/jacoco/jacoco.xml. El job falla si no se cumple el Quality Gate, el despliegue depende de él (needs: [docker, sonarqube]) y SonarCloud comenta cada PR con el check «SonarCloud Code Analysis».</p>
+<p><strong>Quality Gate definido:</strong> «Sonar way» (predeterminado), evaluado sobre el código nuevo: cobertura ≥ 80 %, líneas duplicadas ≤ 3 %, calificaciones A en confiabilidad, seguridad y mantenibilidad, y 100 % de security hotspots revisados. Periodo de código nuevo: versión anterior (previous_version), desde el 21/09/2026.</p>
+<p><strong>Reglas y exclusiones configuradas:</strong> perfil integrado «Sonar way» (Java), sin sonar.exclusions ni exclusiones de cobertura. Hay una incidencia aceptada: java:S4502 (protección CSRF deshabilitada) en SecurityConfig.java:49. Se justifica porque la API es stateless y se autentica con un JWT en el encabezado Authorization, sin cookies de sesión; el PR #32 limitó la exención de CSRF a /api/v1/** y /h2-console/**. El perfil también aplica las reglas sobre pruebas, entre ellas java:S2699 («las pruebas deben incluir aserciones»), java:S5863 y java:S5790; SonarCloud analiza los 60 archivos de prueba y no registra incidencias de esas reglas.</p>
+<h2 id="4-resultados-del-analisis">4. Resultados del análisis</h2>
+<p><strong>Cobertura reportada:</strong> 89,3 % global (94,3 % de líneas y 72,8 % de condiciones; 105 de 1.830 líneas sin cubrir) y 88,4 % en el código nuevo; 468 pruebas.</p>
+<p><strong>Bugs, vulnerabilidades y code smells:</strong> 0 bugs, 0 vulnerabilidades y 0 code smells; 0 security hotspots (100 % revisados); calificación A en confiabilidad, seguridad, mantenibilidad y revisión de seguridad; 1 incidencia aceptada (S4502).</p>
+<p><strong>Duplicación y mantenibilidad:</strong> 0,0 % de líneas duplicadas (0 bloques) y deuda técnica de 0 min (ratio 0,0 %) en 6.312 líneas de código, con complejidad ciclomática 650 y complejidad cognitiva 271.</p>
+<p><strong>Estado del Quality Gate:</strong> Passed en main (análisis del 23/11/2026 a las 04:01 UTC, commit a3f88ab) y en el PR #52 («Quality Gate passed»). Los seis análisis de main desde el 21/09/2026 están en verde; SonarCloud registró el evento «Green (was Red)» el 15/10/2026.</p>
+<p><strong>Evidencias del análisis:</strong> <a href="https://sonarcloud.io/summary/overall?id=Facimus-Curiositatem_Beta-back&amp;branch=main" rel="noopener noreferrer" target="_blank">resumen público en SonarCloud</a>, check «SonarCloud Code Analysis» de cada PR y job SonarCloud de la ejecución <a href="https://github.com/Facimus-Curiositatem/Beta-back/actions/runs/45109076116" rel="noopener noreferrer" target="_blank">#45109076116</a> (main).</p>
+<figure>
+<img alt="Figura 3. Resumen de SonarCloud de la rama main: Quality Gate aprobado, 0 incidencias abiertas, 89,3 % de cobertura y 0,0 % de duplicación." height="775" loading="lazy" src="img/06_Unitarias_SonarQube/figura-3.png" width="1482"/>
+<figcaption>
+Figura 3. Resumen de SonarCloud de la rama main: Quality Gate aprobado, 0 incidencias abiertas, 89,3 % de cobertura y 0,0 % de duplicación.
+</figcaption>
+</figure>
+<h2 id="5-acciones-y-conclusiones">5. Acciones y conclusiones</h2>
+<p><strong>Hallazgos prioritarios:</strong></p>
+<ul>
+<li>
+Cobertura de ramas del backend (72,8 %) por debajo de la de líneas; los paquetes más bajos son gestion.service (67,4 %), modelado.controller (50 %) y config (50 %).
+</li>
+<li>
+En el frontend, ramas (45,5 %) y funciones (62,3 %); el resolver de rutas tiene 8,6 % de líneas y varias listas tienen 0 % de ramas.
+</li>
+<li>
+El frontend (TypeScript) no está analizado en SonarCloud.
+</li>
+<li>
+La versión del proyecto es fija (0.0.1-SNAPSHOT), así que el periodo de «código nuevo» no avanza desde el 21/09/2026.
+</li>
+</ul>
+<p><strong>Correcciones realizadas:</strong></p>
+<ul>
+<li>
+La vulnerabilidad S4502 detectada el 21/09/2026 se revisó: el PR #32 limitó la exención de CSRF a la API con JWT y la incidencia se marcó como aceptada en SonarCloud; desde el 15/10/2026 el proyecto reporta 0 vulnerabilidades.
+</li>
+<li>
+El refactor del PR #37 (ModelMapper, un repositorio por servicio y eliminación de métodos of() sin uso en 19 DTO) dejó el Quality Gate en verde.
+</li>
+<li>
+Entre el 15/10 y el 23/11/2026 se pasó de 444 a 468 pruebas y la cobertura subió de 88,8 % a 89,3 %, sin nuevos code smells ni duplicación.
+</li>
+</ul>
+<p><strong>Limitaciones / deuda técnica pendiente:</strong></p>
+<ul>
+<li>
+Agregar el frontend a SonarCloud (sonar-project.properties y un job en CI/CD Front que publique lcov.info).
+</li>
+<li>
+Publicar sonar.projectVersion con el tag de cada release (vX.Y.Z) para que el código nuevo se mida por versión.
+</li>
+<li>
+Subir la cobertura de ramas con casos para las rutas de error de los servicios y controladores.
+</li>
+<li>
+Las pruebas de integración usan H2; las diferencias con PostgreSQL se cubren con Postman y JMeter contra PostgreSQL 18.6.
+</li>
+</ul>
+<h3 id="casos-unitarios">Casos unitarios</h3>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+<caption>
+Tabla 1. Casos unitarios representativos. Fuente: reportes JUnit (reporte-junit) y especificaciones Karma.
+</caption>
+
+<thead>
+<tr>
+<th><strong>ID</strong></th>
+<th><strong>Unidad / función</strong></th>
+<th><strong>Escenario</strong></th>
+<th><strong>Esperado</strong></th>
+<th><strong>Resultado</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="doc-id">CU-01</td>
+<td>JwtService.generarRefreshToken</td>
+<td>Generar refresh token</td>
+<td>Claim tipo=refresh, sin rol y vigencia en días</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CU-02</td>
+<td>JwtService.validar</td>
+<td>Token de otra clave, de otro emisor o vencido</td>
+<td>Rechazado (vacío)</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CU-03</td>
+<td>UsuarioService.autenticar</td>
+<td>Contraseña incorrecta o usuario inactivo</td>
+<td>No autentica</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CU-04</td>
+<td>UsuarioService.crearColaborador</td>
+<td>Correo ya registrado</td>
+<td>Rechazo por correo duplicado</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CU-05</td>
+<td>ProcesoService.publicar</td>
+<td>Proceso publicado que intenta volver a borrador</td>
+<td>Regla de estados respetada</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CU-06</td>
+<td>ArcoService.editar</td>
+<td>Gateway origen sin condición; destino igual al origen</td>
+<td>ReglaNegocioException</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CU-07</td>
+<td>EventoMensajeService.crear</td>
+<td>Catch con el mismo nombre que su Throw</td>
+<td>Válido (regla corregida en PR #52)</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CU-08</td>
+<td>ValidacionModeloService</td>
+<td>Gateway exclusivo con salida sin condición; mensaje sin clave de correlación</td>
+<td>Publicación rechazada</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CU-09</td>
+<td>SeguridadIntegracionTest</td>
+<td>Refresh tras un cambio de rol</td>
+<td>El token nuevo trae el rol nuevo</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CU-10</td>
+<td>AutorizacionPorRolTest</td>
+<td>31 combinaciones de rol, método y endpoint</td>
+<td>Código de la matriz (2xx o 403)</td>
+<td>31/31 aprobados</td>
+</tr>
+<tr>
+<td class="doc-id">CU-11</td>
+<td>AislamientoEmpresasIntegracionTest</td>
+<td>Recurso de otra empresa por id</td>
+<td>404 sin modificar el recurso</td>
+<td>47/47 aprobados</td>
+</tr>
+<tr>
+<td class="doc-id">CU-12</td>
+<td>SeparacionRepositoriosTest (ArchUnit)</td>
+<td>Cada repositorio lo inyecta solo su servicio</td>
+<td>Sin dependencias cruzadas</td>
+<td>15/15 aprobados</td>
+</tr>
+<tr>
+<td class="doc-id">CU-13</td>
+<td>refreshInterceptor (front)</td>
+<td>Varios 401 simultáneos</td>
+<td>Un solo refresh y reintento con el token nuevo</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CU-14</td>
+<td>authGuard (front)</td>
+<td>Token vencido con refresh token</td>
+<td>Renueva y deja entrar; si falla, va a /login</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CU-15</td>
+<td>authInterceptor (front)</td>
+<td>Petición de login o a otra API</td>
+<td>No envía ni filtra el token</td>
+<td>Aprobado</td>
+</tr>
+<tr>
+<td class="doc-id">CU-16</td>
+<td>AuthService (front)</td>
+<td>Logout con error del servidor</td>
+<td>Descarta ambos tokens</td>
+<td>Aprobado</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="indicadores-sonarqube">Indicadores SonarQube</h3>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+<caption>
+Tabla 2. Indicadores del último análisis de SonarCloud (rama main, 23/11/2026).
+</caption>
+
+<thead>
+<tr>
+<th><strong>Métrica</strong></th>
+<th><strong>Resultado</strong></th>
+<th><strong>Umbral / criterio</strong></th>
+<th><strong>Cumple</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Quality Gate</td>
+<td>Passed</td>
+<td>Sonar way</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td>Cobertura del código nuevo</td>
+<td>88,4 %</td>
+<td>≥ 80 %</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td>Cobertura global (líneas / ramas)</td>
+<td>89,3 % (94,3 % / 72,8 %)</td>
+<td>Seguimiento del equipo: ≥ 80 %</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td>Líneas duplicadas (código nuevo)</td>
+<td>0,0 %</td>
+<td>≤ 3 %</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td>Bugs / confiabilidad</td>
+<td>0 / A</td>
+<td>A</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td>Vulnerabilidades / seguridad</td>
+<td>0 / A</td>
+<td>A</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td>Code smells / mantenibilidad</td>
+<td>0 / A (deuda 0 min)</td>
+<td>A</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td>Security hotspots revisados</td>
+<td>100 % (0 abiertos)</td>
+<td>100 %</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td>Pruebas</td>
+<td>468, 0 fallidas</td>
+<td>0 fallos</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td>Pruebas sin aserciones (java:S2699)</td>
+<td>0 incidencias (310 de 311 métodos con aserción)</td>
+<td>0</td>
+<td>Sí</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="hallazgos">Hallazgos</h3>
+<div class="doc-tabla-scroll"><table class="doc-tabla">
+<caption>
+Tabla 3. Hallazgos y acciones.
+</caption>
+
+<thead>
+<tr>
+<th><strong>ID</strong></th>
+<th><strong>Tipo / severidad</strong></th>
+<th><strong>Ubicación</strong></th>
+<th><strong>Acción / estado</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="doc-id">HS-01</td>
+<td>Vulnerabilidad · crítica (java:S4502)</td>
+<td>SecurityConfig.java:49 (CSRF deshabilitado)</td>
+<td>Aceptada con justificación: API stateless con JWT en el encabezado</td>
+</tr>
+<tr>
+<td class="doc-id">HS-02</td>
+<td>Cobertura · media</td>
+<td>gestion.service, modelado.controller y config (ramas)</td>
+<td>Pendiente: casos de rutas de error</td>
+</tr>
+<tr>
+<td class="doc-id">HS-03</td>
+<td>Cobertura · media (front)</td>
+<td>Resolver de rutas, lane-list y listas sin ramas cubiertas</td>
+<td>Pendiente</td>
+</tr>
+<tr>
+<td class="doc-id">HS-04</td>
+<td>Configuración · baja</td>
+<td>pom.xml: versión fija 0.0.1-SNAPSHOT</td>
+<td>Pendiente: sonar.projectVersion por release</td>
+</tr>
+<tr>
+<td class="doc-id">HS-05</td>
+<td>Alcance · media</td>
+<td>Frontend Angular sin análisis estático</td>
+<td>Pendiente: proyecto y job de SonarCloud</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="anexos-y-referencias">Anexos y referencias</h2>
+<p><strong>Repositorio / documentación:</strong></p>
+<ul>
+<li>
+Backend: <a href="https://github.com/Facimus-Curiositatem/Beta-back" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-back</a> (código, pruebas en src/test, colecciones en postman/, planes en jmeter/, workflow en .github/workflows/ci.yml).
+</li>
+<li>
+Frontend: <a href="https://github.com/Facimus-Curiositatem/Beta-front" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-front</a> (Angular, pruebas unitarias *.spec.ts, suite E2E en e2e/).
+</li>
+<li>
+Documentación: <a href="https://github.com/Facimus-Curiositatem/Beta-Wiki" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-Wiki</a>.
+</li>
+<li>
+Aplicación desplegada: <a href="https://beta-front.taila95c4c.ts.net" rel="noopener noreferrer" target="_blank">https://beta-front.taila95c4c.ts.net</a>.
+</li>
+</ul>
+<p><strong>Capturas, diagramas, reportes, logs u otras evidencias:</strong></p>
+<ul>
+<li>
+SonarCloud: <a href="https://sonarcloud.io/summary/overall?id=Facimus-Curiositatem_Beta-back&amp;branch=main" rel="noopener noreferrer" target="_blank">https://sonarcloud.io/summary/overall?id=Facimus-Curiositatem_Beta-back&amp;branch=main</a>.
+</li>
+<li>
+Backend (JUnit, JaCoCo y SonarCloud en main): <a href="https://github.com/Facimus-Curiositatem/Beta-back/actions/runs/45109076116" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-back/actions/runs/45109076116</a> (artefactos reporte-junit y reporte-jacoco).
+</li>
+<li>
+Frontend (Karma): <a href="https://github.com/Facimus-Curiositatem/Beta-front/actions/runs/45108415804" rel="noopener noreferrer" target="_blank">https://github.com/Facimus-Curiositatem/Beta-front/actions/runs/45108415804</a> (artefacto reporte-cobertura-front).
+</li>
+</ul>
+</article>
+</div>
